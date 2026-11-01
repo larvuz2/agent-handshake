@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/larvuz2/agent-handshake/main/spec/terms.schema.json",
+  "title": "Agent Handshake terms",
+  "description": "The dev.handshake/terms extension: plans, scopes and limits for one MCP server. Gateways publish it in the server card at _meta[\"dev.handshake/terms\"]. Spec version 0.1. Unknown properties are allowed, so newer gateways can add fields.",
+  "type": "object",
+  "required": ["specVersion", "gateway", "install", "manage", "defaultPlan", "scopes", "plans", "uninstall"],
+  "properties": {
+    "specVersion": {
+      "title": "Spec version",
+      "description": "Version of this terms format. This schema describes 0.1.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "examples": ["0.1"]
+    },
+    "gateway": {
+      "title": "Gateway",
+      "description": "Base URL of the gateway that enforces these terms.",
+      "$ref": "#/$defs/url"
+    },
+    "install": {
+      "title": "Install page",
+      "description": "Page where a person adds this server to their agent.",
+      "$ref": "#/$defs/url"
+    },
+    "manage": {
+      "title": "Manage page",
+      "description": "Page where a person sees, upgrades or removes their tools.",
+      "$ref": "#/$defs/url"
+    },
+    "defaultPlan": {
+      "title": "Default plan",
+      "description": "Id of the plan new installs start on. One of the plan ids in plans.",
+      "$ref": "#/$defs/planId"
+    },
+    "scopes": {
+      "title": "Scopes",
+      "description": "What each scope lets the agent do, keyed by scope name. Empty when the server has no scopes.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/scopeName" },
+      "additionalProperties": { "$ref": "#/$defs/scope" }
+    },
+    "plans": {
+      "title": "Plans",
+      "description": "Plans a person can be on.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/plan" }
+    },
+    "uninstall": {
+      "title": "Uninstall",
+      "description": "How a host removes the server.",
+      "type": "object",
+      "required": ["revocationEndpoint"],
+      "properties": {
+        "revocationEndpoint": {
+          "title": "Revocation endpoint",
+          "description": "OAuth token revocation endpoint (RFC 7009). Revoking the host's token removes the connection.",
+          "$ref": "#/$defs/url"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "url": {
+      "title": "URL",
+      "description": "An absolute http:// or https:// URL.",
+      "type": "string",
+      "pattern": "^https?://\\S+$"
+    },
+    "planId": {
+      "title": "Plan id",
+      "description": "Lowercase letters, digits, dashes and underscores.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "scopeName": {
+      "title": "Scope name",
+      "description": "Letters, digits and _ . : -",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.:-]+$"
+    },
+    "scope": {
+      "title": "Scope",
+      "description": "One scope.",
+      "type": "object",
+      "required": ["description"],
+      "properties": {
+        "description": {
+          "title": "Scope description",
+          "description": "What this scope lets the agent do, in plain words.",
+          "type": "string"
+        }
+      }
+    },
+    "plan": {
+      "title": "Plan",
+      "description": "One plan: free, a free trial, paid, or pay per call.",
+      "type": "object",
+      "required": ["id", "title", "price", "scopes"],
+      "properties": {
+        "id": {
+          "title": "Plan id",
+          "description": "Short id of the plan, like trial or pro.",
+          "$ref": "#/$defs/planId"
+        },
+        "title": {
+          "title": "Plan title",
+          "description": "Name people see.",
+          "type": "string"
+        },
+        "price": {
+          "title": "Price",
+          "description": "0 for free (also for pay-per-call plans), or an object with amount, currency and interval.",
+          "anyOf": [
+            { "title": "Free", "const": 0 },
+            {
+              "title": "Price object",
+              "type": "object",
+              "required": ["amount", "currency"],
+              "properties": {
+                "amount": {
+                  "title": "Amount",
+                  "description": "Price in whole currency units, like 9 or 9.99.",
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "currency": {
+                  "title": "Currency",
+                  "description": "Three-letter currency code in capitals, like USD.",
+                  "type": "string",
+                  "pattern": "^[A-Z]{3}$"
+                },
+                "interval": {
+                  "title": "Billing interval",
+                  "description": "How often it is charged. Missing means a one-time payment.",
+                  "enum": ["day", "week", "month", "year"]
+                }
+              }
+            }
+          ]
+        },
+        "durationDays": {
+          "title": "Length in days",
+          "description": "Days the plan lasts. Missing means no end.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "limits": {
+          "title": "Limits",
+          "description": "Usage limits for the plan.",
+          "type": "object",
+          "properties": {
+            "calls": {
+              "title": "Call limit",
+              "description": "Most tool calls allowed per period.",
+              "type": "integer",
+              "minimum": 0
+            },
+            "period": {
+              "title": "Period",
+              "description": "When the counts reset: total (never), day, or month (every 30 days). Missing means total.",
+              "enum": ["total", "day", "month"]
+            },
+            "spendUsd": {
+              "title": "Spend limit",
+              "description": "Most USD the plan may spend per period. 0 means no payment is ever taken.",
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "scopes": {
+          "title": "Plan scopes",
+          "description": "Scopes this plan unlocks. \"*\" means every tool.",
+          "type": "array",
+          "items": {
+            "anyOf": [{ "const": "*" }, { "$ref": "#/$defs/scopeName" }]
+          }
+        },
+        "checkoutUrl": {
+          "title": "Checkout URL",
+          "description": "Where to send a person to buy this plan. Set on paid plans that are not pay per call.",
+          "$ref": "#/$defs/url"
+        },
+        "x402": {
+          "title": "Pay per call (x402)",
+          "description": "Set when the agent pays for each call with x402.",
+          "type": "object",
+          "required": ["pricePerCall", "asset", "network"],
+          "properties": {
+            "pricePerCall": {
+              "title": "Price per call",
+              "description": "USD per call as a decimal string, like \"0.01\".",
+              "type": "string",
+              "pattern": "^(?=.*[1-9])[0-9]+(\\.[0-9]+)?$"
+            },
+            "asset": {
+              "title": "Asset",
+              "description": "Token the agent pays with, like USDC.",
+              "type": "string"
+            },
+            "network": {
+              "title": "Network",
+              "description": "Chain to pay on, as a CAIP-2 id, like eip155:8453 (Base).",
+              "type": "string",
+              "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

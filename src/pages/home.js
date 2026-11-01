@@ -27,7 +27,7 @@ export function homePage({ config, services, user }) {
 
   <section class="ah-section" id="tools">
     <h2>Tools on this gateway</h2>
-    <p class="ah-muted">Each one starts as a free trial with a $0 spend limit.</p>
+    <p class="ah-muted">Each one starts free, with a $0 spend limit.</p>
     <div class="ah-grid">${cards}</div>
   </section>
 

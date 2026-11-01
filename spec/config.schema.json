@@ -1,0 +1,499 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/larvuz2/agent-handshake/main/spec/config.schema.json",
+  "title": "Agent Handshake config",
+  "description": "The handshake.config.json file for an Agent Handshake gateway. Any string can use ${env:NAME} to read an environment variable when the gateway starts.",
+  "type": "object",
+  "required": ["services"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "title": "Schema",
+      "description": "Link to this schema, for editor hints.",
+      "type": "string"
+    },
+    "name": {
+      "title": "Gateway name",
+      "description": "Name shown on the gateway's pages. Default: Agent Handshake.",
+      "type": "string",
+      "default": "Agent Handshake"
+    },
+    "publicUrl": {
+      "title": "Public URL",
+      "description": "Address people and agents use to reach the gateway, like https://tools.example.com. The PUBLIC_URL env var wins. Default: the hosting platform's URL (Render, Railway, Fly), else http://localhost:<port>.",
+      "$ref": "#/$defs/httpUrl",
+      "examples": ["https://tools.example.com"]
+    },
+    "port": {
+      "title": "Port",
+      "description": "Port to listen on. The PORT env var wins. Default: 7410.",
+      "anyOf": [
+        { "type": "integer", "minimum": 0, "maximum": 65535 },
+        { "$ref": "#/$defs/envRef" }
+      ],
+      "default": 7410
+    },
+    "host": {
+      "title": "Host",
+      "description": "Network address to listen on. The HOST env var wins. Default: 0.0.0.0.",
+      "type": "string",
+      "default": "0.0.0.0"
+    },
+    "dataDir": {
+      "title": "Data folder",
+      "description": "Folder for the gateway's data, relative to this file. The DATA_DIR env var wins. Default: .handshake.",
+      "type": "string",
+      "minLength": 1,
+      "default": ".handshake"
+    },
+    "payments": {
+      "title": "Payments",
+      "description": "How people pay for paid plans.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "title": "Payment mode",
+          "description": "test: a fake checkout for trying things out. stripe: Stripe Checkout. external: send people to each plan's checkoutUrl. The PAYMENTS_MODE env var wins. Default: stripe when a Stripe key is set, else test.",
+          "anyOf": [
+            { "enum": ["test", "stripe", "external"] },
+            { "$ref": "#/$defs/envRef" }
+          ]
+        },
+        "stripe": {
+          "title": "Stripe",
+          "description": "Stripe settings, used when the mode is stripe.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "secretKey": {
+              "title": "Stripe secret key",
+              "description": "Stripe secret key. Use ${env:STRIPE_SECRET_KEY} instead of pasting it here. The STRIPE_SECRET_KEY env var wins.",
+              "type": "string",
+              "examples": ["${env:STRIPE_SECRET_KEY}"]
+            },
+            "webhookSecret": {
+              "title": "Stripe webhook secret",
+              "description": "Signing secret of your Stripe webhook (whsec_...). The STRIPE_WEBHOOK_SECRET env var wins.",
+              "type": "string",
+              "examples": ["${env:STRIPE_WEBHOOK_SECRET}"]
+            },
+            "apiBase": {
+              "title": "Stripe API address",
+              "description": "Base URL of the Stripe API. Change it only for testing. The STRIPE_API_BASE env var wins. Default: https://api.stripe.com.",
+              "$ref": "#/$defs/httpUrl",
+              "default": "https://api.stripe.com"
+            }
+          }
+        },
+        "x402": {
+          "title": "x402",
+          "description": "Settings for pay-per-call plans paid with x402.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "facilitatorUrl": {
+              "title": "Facilitator URL",
+              "description": "x402 facilitator that checks and settles payments. The X402_FACILITATOR_URL env var wins. Default: https://x402.org/facilitator.",
+              "$ref": "#/$defs/httpUrl",
+              "default": "https://x402.org/facilitator"
+            }
+          }
+        }
+      }
+    },
+    "allowInsecureClientMetadata": {
+      "title": "Allow insecure client metadata",
+      "description": "Accept http:// and private-network OAuth client metadata documents. For local testing only. Default: true when publicUrl is localhost, else false.",
+      "type": "boolean"
+    },
+    "accessTokenTtlSeconds": {
+      "title": "Access token lifetime",
+      "description": "Seconds an access token stays valid. Default: 3600 (1 hour).",
+      "type": "integer",
+      "minimum": 1,
+      "default": 3600
+    },
+    "refreshTokenTtlSeconds": {
+      "title": "Refresh token lifetime",
+      "description": "Seconds a refresh token stays valid. Default: 7776000 (90 days).",
+      "type": "integer",
+      "minimum": 1,
+      "default": 7776000
+    },
+    "services": {
+      "title": "Services",
+      "description": "The MCP servers to put behind the gateway. At least one. Each id must be different.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/service" }
+    }
+  },
+  "$defs": {
+    "envRef": {
+      "title": "Environment variable",
+      "description": "Read the value from an environment variable, like ${env:NAME}.",
+      "type": "string",
+      "pattern": "^\\$\\{env:[A-Z0-9_]+\\}$"
+    },
+    "httpUrl": {
+      "title": "URL",
+      "description": "An http:// or https:// URL, or one read from an environment variable.",
+      "type": "string",
+      "pattern": "^(https?://|\\$\\{env:[A-Z0-9_]+\\})"
+    },
+    "service": {
+      "title": "Service",
+      "description": "One MCP server behind the gateway, with its scopes and plans.",
+      "type": "object",
+      "required": ["id", "upstream"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Service id",
+          "description": "Short id used in links, like /add/<id>. Lowercase letters, digits and dashes; up to 63 characters.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+          "examples": ["my-tool"]
+        },
+        "name": {
+          "title": "Registry name",
+          "description": "Name in MCP Registry style, with exactly one slash, like com.example/my-tool. Default: local.handshake/<id>.",
+          "type": "string",
+          "pattern": "^[^/]{1,99}/[^/]{1,100}$",
+          "examples": ["com.example/my-tool"]
+        },
+        "title": {
+          "title": "Title",
+          "description": "Name people see. Default: name, else id.",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "description": "One line about what the server does.",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "description": "Version shown in the server card. Default: 1.0.0.",
+          "type": "string",
+          "default": "1.0.0"
+        },
+        "icon": {
+          "title": "Icon",
+          "description": "URL of a square icon image.",
+          "type": "string"
+        },
+        "websiteUrl": {
+          "title": "Website",
+          "description": "Your website. Default: publisher.url.",
+          "$ref": "#/$defs/httpUrl"
+        },
+        "publisher": {
+          "title": "Publisher",
+          "description": "Who makes the server. Shown on the install page.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "title": "Publisher name",
+              "description": "Company or person. Default: the service title.",
+              "type": "string"
+            },
+            "domain": {
+              "title": "Publisher domain",
+              "description": "Your domain, like example.com (no https://). Marked verified only when the gateway runs on this domain over https.",
+              "type": "string",
+              "examples": ["example.com"]
+            },
+            "url": {
+              "title": "Publisher website",
+              "description": "Publisher's website.",
+              "$ref": "#/$defs/httpUrl"
+            }
+          }
+        },
+        "upstream": {
+          "title": "Upstream server",
+          "description": "The MCP server the gateway forwards calls to.",
+          "type": "object",
+          "required": ["url"],
+          "additionalProperties": false,
+          "properties": {
+            "url": {
+              "title": "Upstream URL",
+              "description": "http(s) URL of your MCP server (Streamable HTTP).",
+              "$ref": "#/$defs/httpUrl",
+              "examples": ["http://localhost:3000/mcp"]
+            },
+            "headers": {
+              "title": "Headers",
+              "description": "Headers sent to your server on every call, like an API key. Use ${env:NAME} for secrets.",
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "examples": [{ "Authorization": "Bearer ${env:UPSTREAM_TOKEN}" }]
+            },
+            "timeoutMs": {
+              "title": "Timeout",
+              "description": "Milliseconds to wait for your server before giving up. Default: 120000.",
+              "type": "integer",
+              "minimum": 1,
+              "default": 120000
+            }
+          }
+        },
+        "scopes": {
+          "title": "Scopes",
+          "description": "Named groups of tools. A plan unlocks the scopes it lists. Tools in no scope are open on every plan.",
+          "type": "object",
+          "propertyNames": {
+            "description": "Letters, digits and _ . : -",
+            "pattern": "^[A-Za-z0-9_.:-]+$"
+          },
+          "additionalProperties": { "$ref": "#/$defs/scope" },
+          "examples": [{ "projects:read": { "description": "Read your projects", "tools": ["list_projects"] } }]
+        },
+        "plans": {
+          "title": "Plans",
+          "description": "What people can sign up for. Plan ids must be different. Default: a 14-day free trial.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/plan" },
+          "default": [{ "id": "trial", "price": 0, "durationDays": 14 }]
+        },
+        "statusTool": {
+          "title": "Status tool",
+          "description": "Add a handshake_status tool that tells the agent the person's plan, usage and upgrade links. Default: true.",
+          "type": "boolean",
+          "default": true
+        },
+        "hideLockedTools": {
+          "title": "Hide locked tools",
+          "description": "Leave tools the person's plan can't use out of the tool list. Default: true.",
+          "type": "boolean",
+          "default": true
+        },
+        "trialsPerIpPerDay": {
+          "title": "Trials per IP per day",
+          "description": "Most free trials one network address can start per day. 0 turns the limit off. Default: 5.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 5
+        }
+      }
+    },
+    "scope": {
+      "title": "Scope",
+      "description": "A named group of tools.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "title": "Scope description",
+          "description": "What this scope lets the agent do, in plain words. Shown on the consent screen. Default: the scope name.",
+          "type": "string"
+        },
+        "tools": {
+          "title": "Tools",
+          "description": "Names of the tools in this scope.",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "plan": {
+      "title": "Plan",
+      "description": "A plan people can be on: free, a free trial, paid, or pay per call.",
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Plan id",
+          "description": "Short id, like trial or pro. Lowercase letters, digits, dashes and underscores.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$",
+          "examples": ["trial", "pro"]
+        },
+        "title": {
+          "title": "Plan title",
+          "description": "Name people see. Default: based on the price, like Free trial, Free or Pay per call.",
+          "type": "string"
+        },
+        "price": { "$ref": "#/$defs/price" },
+        "durationDays": {
+          "title": "Length in days",
+          "description": "Days the plan lasts, like 14 for a two-week trial. Leave out for no end.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "limits": { "$ref": "#/$defs/limits" },
+        "scopes": {
+          "title": "Plan scopes",
+          "description": "Scopes this plan unlocks, from the service's scopes. \"*\" unlocks every tool. Default: [\"*\"].",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^(\\*|[A-Za-z0-9_.:-]+)$" },
+          "default": ["*"]
+        },
+        "default": {
+          "title": "Default plan",
+          "description": "New installs start on this plan. Default: the plan with id trial, else the first free plan, else the first plan.",
+          "type": "boolean"
+        },
+        "checkoutUrl": {
+          "title": "Checkout URL",
+          "description": "Your own checkout page for this plan. Used instead of Stripe or test checkout. Needed on every paid plan when payments.mode is external.",
+          "$ref": "#/$defs/httpUrl"
+        },
+        "stripePriceId": {
+          "title": "Stripe price id",
+          "description": "Stripe Price to charge, like price_123. Without it the gateway builds the price from price.",
+          "type": "string",
+          "examples": ["price_123"]
+        },
+        "x402": { "$ref": "#/$defs/x402Plan" }
+      }
+    },
+    "price": {
+      "title": "Price",
+      "description": "0 for free. A plain number is USD per month. Or an object with amount, currency and interval.",
+      "default": 0,
+      "anyOf": [
+        {
+          "title": "Free, or USD per month",
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "title": "Price object",
+          "type": "object",
+          "required": ["amount"],
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "title": "Amount",
+              "description": "Price in whole currency units, like 9 or 9.99. 0 makes the plan free.",
+              "type": "number",
+              "minimum": 0
+            },
+            "currency": {
+              "title": "Currency",
+              "description": "Three-letter currency code, like USD or EUR. Default: USD.",
+              "type": "string",
+              "pattern": "^[A-Za-z]{3}$",
+              "default": "USD"
+            },
+            "interval": {
+              "title": "Billing interval",
+              "description": "How often to charge. Leave out for a one-time payment.",
+              "enum": ["day", "week", "month", "year"]
+            }
+          }
+        }
+      ]
+    },
+    "limits": {
+      "title": "Limits",
+      "description": "Usage limits for the plan.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "calls": {
+          "title": "Call limit",
+          "description": "Most tool calls allowed per period.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "period": {
+          "title": "Period",
+          "description": "When the counts reset: total (never), day, or month (every 30 days). Default: total.",
+          "enum": ["total", "day", "month"],
+          "default": "total"
+        },
+        "spendUsd": {
+          "title": "Spend limit",
+          "description": "Most USD the plan may spend per period on pay-per-call tools. Free trials default to 0.",
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "x402Plan": {
+      "title": "Pay per call (x402)",
+      "description": "Charge for each tool call with x402. The agent pays in USDC; no account or card needed.",
+      "type": "object",
+      "required": ["pricePerCall", "payTo"],
+      "additionalProperties": false,
+      "properties": {
+        "pricePerCall": {
+          "title": "Price per call",
+          "description": "USD charged for each call. Best as a string, like \"0.01\".",
+          "anyOf": [
+            { "type": "string", "pattern": "^(?=.*[1-9])[0-9]+(\\.[0-9]+)?$" },
+            { "type": "number", "minimum": 0.000001 }
+          ],
+          "examples": ["0.01"]
+        },
+        "payTo": {
+          "title": "Pay to",
+          "description": "Wallet address that receives the payments.",
+          "type": "string",
+          "minLength": 1
+        },
+        "network": {
+          "title": "Network",
+          "description": "Chain to pay on, as a CAIP-2 id. eip155:8453 is Base; eip155:84532 is Base Sepolia, a testnet. Default: eip155:84532 (testnet).",
+          "anyOf": [
+            { "type": "string", "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}$" },
+            { "$ref": "#/$defs/envRef" }
+          ],
+          "default": "eip155:84532",
+          "examples": ["eip155:8453", "eip155:84532"]
+        },
+        "asset": {
+          "title": "Asset",
+          "description": "Name of the token shown to people. Default: USDC.",
+          "type": "string",
+          "default": "USDC"
+        },
+        "assetAddress": {
+          "title": "Token address",
+          "description": "Token contract address. Needed on networks other than Base and Base Sepolia.",
+          "type": "string"
+        },
+        "assetDecimals": {
+          "title": "Token decimals",
+          "description": "Decimal places of the token. Default: 6, as for USDC.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 6
+        },
+        "assetName": {
+          "title": "Token signing name",
+          "description": "Token name used for signing (EIP-712 domain name). Default: the known USDC name, else asset.",
+          "type": "string"
+        },
+        "assetVersion": {
+          "title": "Token signing version",
+          "description": "Token version used for signing (EIP-712 domain version). Default: the known value, else 2.",
+          "type": "string"
+        }
+      },
+      "if": {
+        "type": "object",
+        "required": ["network"],
+        "properties": {
+          "network": {
+            "type": "string",
+            "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}$",
+            "not": { "enum": ["eip155:8453", "eip155:84532"] }
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": { "assetAddress": { "type": "string" } },
+        "required": ["assetAddress"]
+      }
+    }
+  }
+}

@@ -61,7 +61,7 @@ export function consentPage({ config, service, client, params, requestToken, csr
       </div>
     </form>
     <p class="ah-small ah-muted" style="margin:16px 0 0">
-      Requested by <b>${redirect.host}</b>${onlyLoopback ? '. Only continue if you just started this from an app on this computer' : ''}.
+      Requested by <b>${redirect.host}</b>.${onlyLoopback ? ' Only continue if you started this yourself.' : ''}
       Remove it anytime in <a href="/my" target="_blank">My tools</a>.
     </p>
   </div>

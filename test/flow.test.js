@@ -87,7 +87,7 @@ describe('trial flow (JSON upstream)', () => {
   test('consent screen shows the three lines and the app', () => {
     assert.match(c.html, /Test Agent wants to add Lumen Video/);
     assert.match(c.html, /Start free trial/);
-    assert.match(c.html, /Create and read your video projects, Render 480p previews/);
+    assert.match(c.html, /Create and read your video projects · Render 480p previews/);
     assert.match(c.html, /Free for 7 days · up to 100 calls/);
     assert.equal(c.iss, s.base);
   });
@@ -238,7 +238,7 @@ describe('limits', () => {
     const r = await rpc(c.mcpUrl, t, 'tools/call', { name: 'list_projects', arguments: {} });
     assert.equal(r.body.result.isError, true);
     assert.match(textOf(r.body.result), /All 2 calls in the Free trial plan/);
-    assert.match(textOf(r.body.result), /Switch to Free \(free\)/);
+    assert.match(textOf(r.body.result), /Switch to the Free plan \(no charge\)/);
     // handshake_status still works and doesn't count
     const st = await rpc(c.mcpUrl, t, 'tools/call', { name: 'handshake_status', arguments: {} });
     assert.match(textOf(st.body.result), /2 of 2 calls used/);

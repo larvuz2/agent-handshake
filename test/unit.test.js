@@ -50,6 +50,21 @@ describe('terms', () => {
     assert.throws(() => normalizeService({ ...base, name: 'no-slash' }), /exactly one/);
   });
 
+  test('catches config mistakes early', () => {
+    assert.throws(() => normalizeService({ ...base, plans: [{ id: 'a', price: -5 }] }), /must not be negative/);
+    assert.throws(() => normalizeService({ ...base, plans: [{ id: 'a', x402: { pricePerCall: '0', payTo: '0x1' } }] }), /pricePerCall/);
+    assert.throws(() => normalizeService({ ...base, plans: [{ id: 'a', x402: { pricePerCall: '0.01', payTo: '0x1', network: 'eip155:1' } }] }), /assetAddress is required/);
+    const s = normalizeService({ ...base, scopes: { read: 'Read things' }, plans: [{ id: 'a', x402: { pricePerCall: 0.0025, payTo: '0x1' } }] });
+    assert.equal(s.scopes.read.description, 'Read things');
+    assert.equal(s.plans[0].x402.pricePerCall, '0.0025');
+    assert.throws(
+      () => buildConfig({ payments: { mode: 'external' }, services: [base] }, { overrides: { quiet: true } }),
+      /needs a checkoutUrl/,
+    );
+    const pub = buildConfig({ services: [base] }, { overrides: { publicUrl: 'https://gw.example', paymentsMode: 'test', quiet: true } });
+    assert.match(pub.warnings[0], /test mode on a public gateway/);
+  });
+
   test('env substitution and missing env vars', () => {
     process.env.AH_TEST_TOKEN = 'secret123';
     const cfg = buildConfig({ services: [{ ...base, upstream: { url: base.upstream.url, headers: { authorization: 'Bearer ${env:AH_TEST_TOKEN}' } } }] }, { overrides: { quiet: true } });

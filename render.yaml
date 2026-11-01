@@ -1,0 +1,25 @@
+# One-click deploy: https://render.com/deploy?repo=https://github.com/larvuz2/agent-handshake
+# Starts the demo. Set HANDSHAKE_CONFIG_JSON to run your own tools.
+services:
+  - type: web
+    name: agent-handshake
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    disk:
+      name: handshake-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: HANDSHAKE_CONFIG_JSON
+        sync: false
+      - key: HANDSHAKE_ADMIN_KEY
+        generateValue: true
+      - key: HANDSHAKE_SECRET
+        generateValue: true
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false

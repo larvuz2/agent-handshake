@@ -32,7 +32,7 @@ function upgradeLines(ctx) {
     else lines.push(`- Upgrade to ${p.title} (${priceLabel(p)}): ${links.upgrade(p.id)}`);
   }
   const free = freePlan(service);
-  if (free && free.id !== e.planId) lines.push(`- Switch to ${free.title} (free): ${links.upgrade(free.id)}`);
+  if (free && free.id !== e.planId) lines.push(`- Switch to the ${free.title} plan (no charge): ${links.upgrade(free.id)}`);
   return lines;
 }
 

@@ -1,4 +1,4 @@
-import { html, jsonForScript, raw } from '../util/html.js';
+import { html, jsonForScript } from '../util/html.js';
 import { installTargets } from '../links.js';
 import { summarizeTerms, termsExtension } from '../terms.js';
 import { behind, copyField, layout, serviceIcon, verifiedPublisher } from './layout.js';
@@ -62,5 +62,5 @@ export function installPage({ config, service, user, existing }) {
   })();
   </script>
   <script type="application/json" id="ah-install">${jsonForScript(info)}</script>`;
-  return layout({ config, title: `Add ${service.title}`, body, user, narrow: true, head: raw('') });
+  return layout({ config, title: `Add ${service.title}`, body, user, narrow: true });
 }

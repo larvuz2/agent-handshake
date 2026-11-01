@@ -89,6 +89,11 @@ p { margin: 0 0 1em; }
 .ah-nav { display: flex; gap: 18px; margin-left: auto; font-size: 0.95rem; }
 .ah-nav a { color: var(--ah-ink-2); }
 .ah-nav a:hover { color: var(--ah-ink); text-decoration: none; }
+@media (max-width: 560px) {
+  .ah-nav { gap: 14px; font-size: 0.9rem; }
+  .ah-nav .ah-hide-sm { display: none; }
+  .ah-brand { font-size: 0.98rem; }
+}
 .ah-footer { border-top: 1px solid var(--ah-line); color: var(--ah-ink-3); font-size: 0.875rem; padding: 24px 0 32px; }
 .ah-footer .ah-wrap { display: flex; gap: 16px; flex-wrap: wrap; }
 .ah-footer a { color: var(--ah-ink-2); }
@@ -110,6 +115,8 @@ p { margin: 0 0 1em; }
 .ah-btn--ghost:hover { background: var(--ah-bg-soft); }
 .ah-btn--danger { background: transparent; color: var(--ah-coral); border-color: color-mix(in srgb, var(--ah-coral) 40%, transparent); }
 .ah-btn--danger:hover { background: var(--ah-coral-soft); }
+.ah-btn--coral { background: var(--ah-coral); }
+.ah-btn--coral:hover { background: color-mix(in srgb, var(--ah-coral) 85%, #000); }
 .ah-btn--mint { background: var(--ah-mint); }
 .ah-btn--mint:hover { background: color-mix(in srgb, var(--ah-mint) 85%, #000); }
 .ah-btn--block { width: 100%; }

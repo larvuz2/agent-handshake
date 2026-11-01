@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Tests (no dependencies)
+        run: npm test
+      - name: Interop with the official MCP SDK client
+        run: |
+          npm ci
+          npm run test:interop
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t agent-handshake:ci .
+      - name: Run the demo and check it answers
+        run: |
+          docker run -d --name ah -p 7410:7410 agent-handshake:ci
+          for i in $(seq 1 20); do curl -fsS http://localhost:7410/healthz && break; sleep 1; done
+          curl -fsS http://localhost:7410/.well-known/ai-catalog.json | grep -q lumen-video
+          curl -fsS -o /dev/null -w '%{http_code}\n' -X POST http://localhost:7410/mcp/lumen-video | grep -q 401
+          docker logs ah
