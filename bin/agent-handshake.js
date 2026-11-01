@@ -277,8 +277,8 @@ async function cmdInit(args) {
   console.log(`\n${c.green('✓')} Wrote ${file}`);
   console.log('\nNext:');
   if (authHeader) console.log(`  export UPSTREAM_TOKEN=...      ${c.dim(`# the value of the ${authHeader} header`)}`);
-  console.log('  npx agent-handshake validate   # checks your MCP server answers');
-  console.log('  npx agent-handshake start      # starts the gateway on http://localhost:7410');
+  console.log('  npx github:larvuz2/agent-handshake validate   # checks your MCP server answers');
+  console.log('  npx github:larvuz2/agent-handshake start      # starts the gateway on http://localhost:7410');
   console.log(c.dim('\n  Tip: give tools a scope to lock them to paid plans. See docs/publishers.md.'));
 }
 
