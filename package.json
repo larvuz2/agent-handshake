@@ -1,0 +1,59 @@
+{
+  "name": "agent-handshake",
+  "version": "0.1.0",
+  "description": "Add to my agent: three clicks, zero pasting. An open-source gateway that gives any MCP server one-click install, free trials, usage metering, keep/drop, and payments.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "oauth",
+    "free-trial",
+    "x402",
+    "gateway",
+    "claude",
+    "cursor"
+  ],
+  "homepage": "https://github.com/larvuz2/agent-handshake",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/larvuz2/agent-handshake.git"
+  },
+  "bugs": "https://github.com/larvuz2/agent-handshake/issues",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "agent-handshake": "bin/agent-handshake.js"
+  },
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./host": "./host/index.js",
+    "./terms": "./src/terms.js",
+    "./links": "./src/links.js",
+    "./labels": "./src/labels.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "src",
+    "host",
+    "brand",
+    "spec",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node bin/agent-handshake.js start",
+    "demo": "node bin/agent-handshake.js demo",
+    "test": "node --test --test-concurrency=1 test/*.test.js",
+    "test:interop": "node --test test/interop/*.test.js",
+    "site": "node scripts/build-site.js"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2"
+  }
+}
