@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Agent Handshake: pitch deck</title>
+<link rel="stylesheet" href="../../brand/handshake.css">
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  html, body { margin: 0; background: #fff; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; color: var(--ah-ink); font-family: var(--ah-font); }
+  .slide { width: 1280px; height: 720px; box-sizing: border-box; padding: 54px 72px 48px; position: relative; overflow: hidden; break-after: page; display: flex; flex-direction: column; background: #fff; }
+  .slide:last-child { break-after: auto; }
+  .hdr { position: absolute; top: 26px; left: 72px; right: 72px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 750; color: var(--ah-ink-3); letter-spacing: -0.01em; }
+  .hdr svg { width: 20px; height: 20px; }
+  .hdr .num { margin-left: auto; font-weight: 600; }
+  .kick { font-size: 14px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ah-blue); margin: 18px 0 10px; }
+  h2.t { font-size: 46px; line-height: 1.06; letter-spacing: -0.035em; margin: 0 0 14px; max-width: 1050px; }
+  .lead { font-size: 21px; color: var(--ah-ink-2); margin: 0 0 26px; max-width: 980px; line-height: 1.45; }
+  .grow { flex: 1; min-height: 0; }
+  .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .card { border: 1px solid var(--ah-line); border-radius: 20px; padding: 28px 30px; background: #fff; }
+  .card h3 { font-size: 25px; margin: 0 0 12px; letter-spacing: -0.02em; }
+  .card p, .card li { font-size: 19px; color: var(--ah-ink-2); line-height: 1.5; margin: 0; }
+  .card ul { margin: 0; padding-left: 22px; display: grid; gap: 10px; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 10px; border-radius: 99px; margin-bottom: 14px; }
+  .tag.blue { background: var(--ah-blue-soft); color: var(--ah-blue); }
+  .tag.mint { background: var(--ah-mint-soft); color: #0b7a58; }
+  .tag.violet { background: #efeaff; color: #5b3fd6; }
+  .tag.coral { background: var(--ah-coral-soft); color: #b42318; }
+  .tag.amber { background: var(--ah-amber-soft); color: #8a5a10; }
+  .foot { margin-top: auto; font-size: 15px; color: var(--ah-ink-3); }
+  .big-quote { font-size: 26px; font-weight: 750; letter-spacing: -0.02em; margin-top: auto; color: var(--ah-ink); }
+  .big-quote span { color: var(--ah-blue); }
+  code, .mono { font-family: var(--ah-mono); }
+  .fill { display: inline-block; border: 2px dashed #d99a2b; background: #fff8ea; color: #8a5a10; border-radius: 10px; padding: 2px 10px; font-weight: 700; }
+
+  /* title */
+  .title { background: radial-gradient(1100px 500px at 85% -10%, #5b7fff 0%, transparent 60%), linear-gradient(150deg, #0b1020 0%, #16204a 55%, #0d3b3a 100%); color: #fff; justify-content: center; }
+  .title .brand { display: flex; align-items: center; gap: 16px; font-size: 30px; font-weight: 780; letter-spacing: -0.02em; }
+  .title .brand svg { width: 58px; height: 58px; }
+  .title h1 { font-size: 78px; line-height: 1.02; letter-spacing: -0.045em; margin: 40px 0 18px; }
+  .title h1 span { background: linear-gradient(100deg, #8fb0ff, #7be0c0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .title p { font-size: 26px; color: #c9d3f5; margin: 0; }
+  .title .meta { position: absolute; left: 72px; bottom: 44px; font-size: 16px; color: #9aa6cf; }
+
+  /* flow */
+  .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; position: relative; }
+  .step { border-radius: 18px; padding: 20px 18px; background: var(--ah-bg-soft); border: 1px solid var(--ah-line); position: relative; }
+  .step .n { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; background: var(--ah-blue); margin-bottom: 12px; }
+  .step b { display: block; font-size: 19px; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .step span { font-size: 15px; color: var(--ah-ink-2); line-height: 1.45; }
+  .step:not(:last-child)::after { content: '→'; position: absolute; right: -14px; top: 50%; transform: translateY(-50%); font-size: 20px; color: var(--ah-ink-3); z-index: 2; }
+  .step.once { background: var(--ah-blue-soft); border-color: transparent; }
+  .step.trial .n { background: var(--ah-mint); }
+  .step.keep .n { background: #7b5cff; }
+
+  /* chat */
+  .chat { border: 1px solid var(--ah-line); border-radius: 20px; padding: 20px; display: grid; gap: 10px; align-content: start; background: #fff; box-shadow: 0 2px 4px rgba(11,16,32,.05), 0 20px 50px rgba(11,16,32,.08); }
+  .b { max-width: 88%; padding: 10px 14px; border-radius: 14px; font-size: 16px; line-height: 1.4; }
+  .b.me { justify-self: end; background: var(--ah-blue); color: #fff; border-bottom-right-radius: 4px; }
+  .b.bot { justify-self: start; background: var(--ah-bg-soft); border: 1px solid var(--ah-line); border-bottom-left-radius: 4px; }
+  .chip { justify-self: start; font-family: var(--ah-mono); font-size: 13px; color: var(--ah-ink-2); border: 1px dashed var(--ah-ink-3); border-radius: 99px; padding: 3px 11px; }
+  .found { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--ah-mint) 45%, var(--ah-line)); border-radius: 12px; background: var(--ah-mint-soft); font-size: 14px; color: var(--ah-ink-2); }
+  .found b { display: block; color: var(--ah-ink); font-size: 16px; }
+  .mi { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: #fff; font-weight: 800; background: linear-gradient(135deg, var(--ah-blue), #7b5cff); flex: none; }
+  .lnk { color: var(--ah-blue); text-decoration: underline; font-weight: 650; }
+
+  /* screenshots */
+  .shot { border: 1px solid var(--ah-line); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 4px rgba(11,16,32,.05), 0 20px 50px rgba(11,16,32,.10); background: #fff; display: flex; align-items: center; justify-content: center; }
+  .shot img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+  .cap { font-size: 14px; color: var(--ah-ink-3); text-align: center; margin-top: 10px; }
+  .cmd { display: inline-flex; gap: 10px; align-items: center; background: var(--ah-ink); color: #e3e8ff; border-radius: 12px; padding: 12px 18px; font-family: var(--ah-mono); font-size: 16px; }
+  .cmd::before { content: '$'; color: #7d89b8; }
+
+  /* stack */
+  .stack { display: grid; gap: 10px; }
+  .layer { border-radius: 16px; padding: 18px 22px; font-size: 18px; }
+  .layer b { display: block; font-size: 20px; margin-bottom: 4px; letter-spacing: -0.01em; }
+  .layer.top { background: linear-gradient(120deg, var(--ah-blue), #6b5cff); color: #fff; }
+  .layer.top span { color: #dfe6ff; }
+  .layer.mid { background: var(--ah-mint-soft); color: #0b5e45; }
+  .layer.base { background: var(--ah-bg-soft); border: 1px solid var(--ah-line); color: var(--ah-ink-2); }
+
+  /* flywheel */
+  .wheel { position: relative; width: 420px; height: 420px; margin: 0 auto; }
+  .wheel .ring { position: absolute; inset: 40px; border-radius: 50%; border: 3px dashed var(--ah-line); }
+  .wheel .node { position: absolute; width: 170px; text-align: center; padding: 14px 12px; border-radius: 16px; font-weight: 750; font-size: 17px; line-height: 1.3; }
+  .wheel .n1 { top: 0; left: 125px; background: var(--ah-blue); color: #fff; }
+  .wheel .n2 { bottom: 40px; right: 0; background: var(--ah-mint); color: #fff; }
+  .wheel .n3 { bottom: 40px; left: 0; background: #7b5cff; color: #fff; }
+  .wheel .center { position: absolute; top: 175px; left: 110px; width: 200px; text-align: center; font-size: 15px; color: var(--ah-ink-2); }
+  .wheel .center b { display: block; color: var(--ah-ink); font-size: 18px; }
+
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 17px; }
+  .cmp th, .cmp td { text-align: left; padding: 16px 18px; border-bottom: 1px solid var(--ah-line); vertical-align: top; }
+  .cmp th { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ah-ink-3); }
+  .cmp td:first-child { font-weight: 750; width: 24%; }
+  .cmp td:nth-child(2) { color: var(--ah-ink-2); width: 26%; }
+  .cmp tr.us td { background: var(--ah-blue-soft); }
+
+  .gtm { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .gtm .card { padding: 20px 18px; }
+  .gtm .card h3 { font-size: 20px; }
+  .gtm .card p { font-size: 16px; }
+  .num-badge { width: 30px; height: 30px; border-radius: 50%; background: var(--ah-ink); color: #fff; display: grid; place-items: center; font-weight: 800; margin-bottom: 12px; font-size: 15px; }
+  .metrics { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+  .metrics span { border: 1px solid var(--ah-line); border-radius: 99px; padding: 8px 14px; font-size: 15px; font-weight: 650; background: var(--ah-bg-soft); }
+
+  .timeline { display: grid; gap: 14px; }
+  .tl { display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: start; }
+  .tl .d { font-weight: 800; font-size: 18px; color: var(--ah-blue); padding-top: 2px; }
+  .tl .c { font-size: 19px; color: var(--ah-ink-2); line-height: 1.45; border-left: 3px solid var(--ah-blue-soft); padding-left: 16px; }
+  .built li { font-size: 18px; }
+  .ask { background: linear-gradient(150deg, #0b1020 0%, #16204a 60%, #0d3b3a 100%); color: #fff; }
+  .ask .hdr { color: #8f9bc6; }
+  .ask h2.t { color: #fff; }
+  .ask .lead { color: #c9d3f5; }
+  .ask .card { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.14); }
+  .ask .card h3 { color: #fff; }
+  .ask .card li, .ask .card p { color: #d4dbf5; }
+  .ask .fill { background: rgba(255,248,234,0.12); color: #ffd28a; border-color: #d99a2b; }
+</style>
+</head>
+<body>
+
+<!-- 1. Title -->
+<section class="slide title">
+  <div class="brand"><svg viewBox="0 0 64 64"><defs><clipPath id="t1"><rect x="22" y="36" width="20" height="16"/></clipPath></defs><rect x="6.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#7d9bff" stroke-width="7"/><rect x="24.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#5fe0b5" stroke-width="7"/><rect x="6.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#7d9bff" stroke-width="7" clip-path="url(#t1)"/></svg>Agent Handshake</div>
+  <h1>Every tool for your agent.<br><span>One handshake.</span></h1>
+  <p>The open agent aggregator. Connect once; your agent finds, tries and uses tools by itself.</p>
+  <div class="meta">Pitch deck · November 2026 · Gus Garza · github.com/larvuz2/agent-handshake</div>
+</section>
+
+<!-- 2. Problem -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">2</span></div>
+  <div class="kick">The problem</div>
+  <h2 class="t">Adding a tool to an AI agent is still copy and paste</h2>
+  <p class="lead">Agents get their abilities from tools. But getting a new tool into an agent is manual, unsafe and unpaid.</p>
+  <div class="cols3">
+    <div class="card"><span class="tag blue">People</span><h3>Paste and pray</h3><p>Paste instructions or API keys into the agent, one tool at a time. No trial, no idea what's used, no clean uninstall.</p></div>
+    <div class="card"><span class="tag mint">Agents</span><h3>Stuck with what they have</h3><p>They can only use what someone wired up in advance. Ask for something new and they can't find or add a tool.</p></div>
+    <div class="card"><span class="tag violet">Tool makers</span><h3>No way to reach agents</h3><p>No distribution, no trial flow, no way to charge an agent. Every agent app installs tools differently.</p></div>
+  </div>
+  <div class="big-quote">“Paste this into your agent” is the install flow of the agent era. <span>It doesn't scale.</span></div>
+</section>
+
+<!-- 3. Solution -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">3</span></div>
+  <div class="kick">The solution</div>
+  <h2 class="t">Connect once. Your agent finds, tries and uses tools.</h2>
+  <p class="lead">Agent Handshake is one front door to every tool, with free trials, spend limits and one place to manage everything.</p>
+  <div class="flow">
+    <div class="step once"><div class="n">1</div><b>Connect once</b><span>Claude, Cursor, VS Code… One screen to approve, about 30 seconds.</span></div>
+    <div class="step"><div class="n">2</div><b>Ask for anything</b><span>“Make me a 15-second video of a sunrise.”</span></div>
+    <div class="step"><div class="n">3</div><b>Agent searches</b><span>It finds a tool in the catalog and reads its terms.</span></div>
+    <div class="step trial"><div class="n">4</div><b>Free trial starts</b><span>Scoped, metered, $0 spend limit. The tool does the job.</span></div>
+    <div class="step keep"><div class="n">5</div><b>Keep, pay or remove</b><span>Paid plans always need the person, on a checkout page.</span></div>
+  </div>
+  <div class="big-quote">No pasting. No API keys. <span>Every new tool after the first connect: 0 or 1 click.</span></div>
+</section>
+
+<!-- 4. Demo -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">4</span></div>
+  <div class="kick">It works today</div>
+  <h2 class="t">An agent gets a new skill in one conversation</h2>
+  <div class="cols2 grow" style="grid-template-columns:1.15fr 0.85fr;margin-top:6px">
+    <div class="chat">
+      <div class="b me">Make me a 15-second video of a sunrise over a lake.</div>
+      <span class="chip">handshake_search · “video”</span>
+      <div class="found"><span class="mi">L</span><div><b>Lumen Video</b>Free for 7 days · up to 100 calls · then $9/mo</div></div>
+      <span class="chip">handshake_add · lumen-video</span>
+      <span class="chip">lumen-video__create_project</span>
+      <div class="b bot">Done: 3 shots (sunrise, lake, close-up). Want a preview?</div>
+      <div class="b me">Render it in 4K.</div>
+      <div class="b bot">4K is on Pro ($9/mo): <span class="lnk">upgrade link</span>. You pay on that page, never in chat.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;min-height:0">
+      <div class="shot" style="flex:1;min-height:0;padding:10px"><img src="../images/hub-consent.png" alt=""></div>
+      <div class="cap">The one screen a person approves (real product)</div>
+    </div>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:14px;align-items:center"><span class="cmd">npx github:larvuz2/agent-handshake demo</span><span class="foot" style="margin:0">Open source. Runs on a laptop in 60 seconds.</span></div>
+</section>
+
+<!-- 5. Three audiences -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">5</span></div>
+  <div class="kick">One hub, three winners</div>
+  <h2 class="t">Everyone in the agent economy gets what they're missing</h2>
+  <div class="cols3" style="margin-top:14px">
+    <div class="card"><span class="tag blue">People</span><h3>Control without effort</h3><ul><li>Connect once, then 0–1 click per tool</li><li>Free trials at a $0 spend limit</li><li>One page to keep, upgrade or remove</li><li>“Let my agent start trials”: on or off</li></ul></div>
+    <div class="card"><span class="tag mint">Agents</span><h3>Abilities on demand</h3><ul><li>One MCP connection, seven tools</li><li>Search the catalog in plain words</li><li>Added tools appear natively</li><li>Clear rules: trials yes, payments via the person</li></ul></div>
+    <div class="card"><span class="tag violet">Tool makers</span><h3>Distribution and revenue</h3><ul><li>Reach every connected agent</li><li>Trials, scopes and metering built in</li><li>Stripe subscriptions or x402 per call</li><li>Your MCP server doesn't change</li></ul></div>
+  </div>
+</section>
+
+<!-- 6. Product -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">6</span></div>
+  <div class="kick">The product</div>
+  <h2 class="t">A catalog for people, a front door for agents</h2>
+  <div class="cols2 grow" style="grid-template-columns:1.3fr 0.7fr;margin-top:8px">
+    <div style="display:flex;flex-direction:column;min-height:0"><div class="shot" style="flex:1;min-height:0;padding:12px"><img src="../images/storefront.png" alt=""></div><div class="cap">The catalog: each tool with its free trial and a one-click add</div></div>
+    <div style="display:flex;flex-direction:column;min-height:0"><div class="shot" style="flex:1;min-height:0;padding:12px"><img src="../images/my-tools.png" alt=""></div><div class="cap">My tools: usage labels, upgrade, remove</div></div>
+  </div>
+</section>
+
+<!-- 7. Why now -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">7</span></div>
+  <div class="kick">Why now</div>
+  <h2 class="t">The plumbing just landed. The layer on top is unclaimed.</h2>
+  <div class="cols3" style="margin-top:14px">
+    <div class="card"><span class="tag blue">2025–2026</span><h3>MCP won</h3><p>Claude, ChatGPT, Cursor, VS Code and Goose all connect to remote MCP servers with OAuth. The July 2026 spec made servers stateless, so hubs are cheap to run.</p></div>
+    <div class="card"><span class="tag mint">Live</span><h3>Agents can pay</h3><p>x402, now a Linux Foundation project, lets agents pay per call in stablecoins. Card checkouts handle subscriptions.</p></div>
+    <div class="card"><span class="tag violet">Drafting now</span><h3>Discovery is forming</h3><p>MCP Server Cards and the AI Catalog standardize how tools describe themselves. Nobody owns trial, billing and control.</p></div>
+  </div>
+  <div class="big-quote">Nobody owns the step between “found a tool” and <span>“it's working and paid for”.</span></div>
+</section>
+
+<!-- 8. Protocol + product -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">8</span></div>
+  <div class="kick">Protocol and product</div>
+  <h2 class="t">An open protocol, and the best place to use it</h2>
+  <p class="lead">Like email: an open standard anyone can implement, plus a flagship service people choose.</p>
+  <div class="cols2" style="grid-template-columns:1.1fr 0.9fr">
+    <div class="stack">
+      <div class="layer top"><b>Agent Handshake hub</b><span>Catalog · agent tools · consent · My tools · flagship hosted hub</span></div>
+      <div class="layer mid"><b>Agent Handshake protocol (open, MIT)</b>Trial and price terms · hub card · one install link · entitlements · spend limits</div>
+      <div class="layer base"><b>Standards that already won</b>MCP · OAuth 2.1 · MCP Server Cards · AI Catalog · x402</div>
+    </div>
+    <div class="card" style="align-self:start"><h3>Why open wins here</h3><ul><li>Tool makers want one listing for every agent app</li><li>Agent apps can support it without a partnership</li><li>Anyone can run a hub; people still want one place for all their tools</li><li>Namespaced extensions move with the standards</li></ul></div>
+  </div>
+</section>
+
+<!-- 9. Business model -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">9</span></div>
+  <div class="kick">Business model</div>
+  <h2 class="t">We earn when tools earn</h2>
+  <div class="cols3" style="margin-top:14px">
+    <div class="card"><span class="tag blue">From the first paid tool</span><h3>Take rate</h3><p>A share of subscriptions and pay-per-call volume that flows through the flagship hub.</p><p style="margin-top:14px">Rate: <span class="fill">TO SET</span></p></div>
+    <div class="card"><span class="tag mint">Months 3–6</span><h3>Hosted gateways</h3><p>Tool makers pay for hosting, custom domains, analytics and conversion tools.</p></div>
+    <div class="card"><span class="tag violet">Months 6–12</span><h3>Private hubs</h3><p>Companies run an approved-tools hub for their employees' agents, with policy, audit and central billing.</p></div>
+  </div>
+  <p class="foot">Benchmark the take rate and prices against app stores and payment platforms before committing to numbers.</p>
+</section>
+
+<!-- 10. Why we win -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">10</span></div>
+  <div class="kick">Why we win</div>
+  <h2 class="t">A flywheel, and the relationship at its center</h2>
+  <div class="cols2 grow" style="grid-template-columns:0.95fr 1.05fr;align-items:center">
+    <div class="wheel">
+      <div class="ring"></div>
+      <div class="node n1">More tools in the catalog</div>
+      <div class="node n2">More agents connect</div>
+      <div class="node n3">More tool makers list</div>
+      <div class="center"><b>Network effect</b>each side makes the hub more valuable for the other</div>
+    </div>
+    <div class="stack" style="gap:12px">
+      <div class="card"><h3>We hold the relationship</h3><p>Spend limits, trials and My tools live in the hub. Agents keep using the same front door.</p></div>
+      <div class="card"><h3>Usage becomes ranking</h3><p>Real calls, success rates and keep/drop decisions make search better than any static directory.</p></div>
+      <div class="card"><h3>Neutral, open and shipped</h3><p>Works across every agent app. v0.2 is live code, tested with the official MCP SDK.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. Competition -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">11</span></div>
+  <div class="kick">Landscape</div>
+  <h2 class="t">Others list or host tools. We close the loop.</h2>
+  <table class="cmp" style="margin-top:10px">
+    <thead><tr><th>Category</th><th>What it does</th><th>Our difference</th></tr></thead>
+    <tbody>
+      <tr><td>Registries</td><td>e.g. the official MCP Registry: lists servers</td><td>We handle install, trial, billing, limits and uninstall, and agents add tools themselves</td></tr>
+      <tr><td>App-specific directories</td><td>Directories inside individual agent apps</td><td>One listing works across every agent app</td></tr>
+      <tr><td>Integration platforms</td><td>Hosted MCP servers and integrations</td><td>An open, cross-app marketplace layer with trials and spend control built in</td></tr>
+      <tr class="us"><td>Agent Handshake</td><td>The open agent aggregator</td><td>Connect once · agent-driven discovery · trials · payments · one place to manage</td></tr>
+    </tbody>
+  </table>
+  <p class="foot">Landscape as of November 2026. Verify specifics before pitching.</p>
+</section>
+
+<!-- 12. GTM -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">12</span></div>
+  <div class="kick">Go-to-market</div>
+  <h2 class="t">Supply first, then every tool's audience becomes ours</h2>
+  <div class="gtm" style="margin-top:12px">
+    <div class="card"><div class="num-badge">1</div><h3>Seed 30–50 tools</h3><p>Our own (Slopia, ShotForge, Capyverse, agentesPRO) plus free utilities and partners.</p></div>
+    <div class="card"><div class="num-badge">2</div><h3>Makers' buttons</h3><p>Every “Add to my agent” button connects people to the hub. They come for one tool and stay.</p></div>
+    <div class="card"><div class="num-badge">3</div><h3>Agent-native</h3><p>Hub listed as an MCP server in the registries and app directories, with llms.txt for agents.</p></div>
+    <div class="card"><div class="num-badge">4</div><h3>Open source</h3><p>“List your tool in 5 minutes”, templates and a public catalog repo.</p></div>
+    <div class="card"><div class="num-badge">5</div><h3>Show the magic</h3><p>Short demos of agents adding skills. Spanish-language markets as a wedge.</p></div>
+  </div>
+  <div class="metrics"><span>Connected agents</span><span>Tools added per agent</span><span>Weekly active tools</span><span>Trial → paid conversion</span><span>Revenue through the hub</span></div>
+</section>
+
+<!-- 13. Traction + milestones -->
+<section class="slide">
+  <div class="hdr">HDR<span class="num">13</span></div>
+  <div class="kick">Where we are</div>
+  <h2 class="t">Built and tested. Next: the flagship hub.</h2>
+  <div class="cols2" style="margin-top:12px">
+    <div class="card"><span class="tag mint">Shipped · v0.2 · open source</span><ul class="built">
+      <li>Hub with seven agent tools; added tools appear natively</li>
+      <li>Consent, free trials, scopes, call caps, metering</li>
+      <li>Stripe checkout and x402 pay-per-call with spend limits</li>
+      <li>Works with Claude, Claude Code, Cursor, VS Code, Goose, ChatGPT</li>
+      <li>93 automated tests plus the official MCP SDK client</li>
+      <li>Independent security review, all findings fixed</li></ul></div>
+    <div class="card"><span class="tag blue">Targets, not traction</span><div class="timeline">
+      <div class="tl"><div class="d">Day 30</div><div class="c">Flagship hub live, 30 tools, first 100 connected agents</div></div>
+      <div class="tl"><div class="d">Day 90</div><div class="c">1,000 connected agents, 10 makers with paid plans, first take-rate revenue</div></div>
+      <div class="tl"><div class="d">Day 180</div><div class="c">Hubs list each other's tools (federation), public catalog repo, first private-hub customer</div></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- 14. Team + Ask -->
+<section class="slide ask">
+  <div class="hdr">HDR<span class="num">14</span></div>
+  <div class="kick" style="color:#8fb0ff">The ask</div>
+  <h2 class="t">Raising <span class="fill">$ AMOUNT</span> to own the agent's front door</h2>
+  <p class="lead">To run the flagship hub, sign the first 50 tools, bring the protocol to the standards groups, and hit the Day-180 milestones.</p>
+  <div class="cols2">
+    <div class="card"><h3>Use of funds</h3><ul><li>Flagship hub: hosting, security, uptime</li><li>Tool partnerships: the first 50 tools</li><li>Standards work: terms and hub extensions</li><li>Growth: demos, community, Spanish-language launch</li></ul></div>
+    <div class="card"><h3>Team</h3><p>Gus Garza · <span class="fill">ROLE AND BACKGROUND</span></p><p style="margin-top:12px"><span class="fill">ADD TEAM AND ADVISORS</span></p><p style="margin-top:18px">github.com/larvuz2/agent-handshake</p></div>
+  </div>
+</section>
+
+<script>
+  // shared header
+  const HDR = '<svg viewBox="0 0 64 64"><defs><clipPath id="hdrc"><rect x="22" y="36" width="20" height="16"/></clipPath></defs><rect x="6.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#2B59FF" stroke-width="7"/><rect x="24.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#12B886" stroke-width="7"/><rect x="6.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#2B59FF" stroke-width="7" clip-path="url(#hdrc)"/></svg>Agent Handshake';
+  document.querySelectorAll('.hdr').forEach((h) => { h.innerHTML = h.innerHTML.replace('HDR', HDR); });
+</script>
+</body>
+</html>

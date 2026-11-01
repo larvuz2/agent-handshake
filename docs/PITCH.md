@@ -1,5 +1,7 @@
 # Agent Handshake: the pitch
 
+**The deck:** [pitch-deck.pdf](pitch-deck.pdf) (14 slides). To edit it, change [deck/deck.html](deck/deck.html), open it in Chrome and choose Print → Save as PDF. Fill in the amount and the team details first.
+
 ## In one sentence
 
 **Agent Handshake is the open agent aggregator: connect your AI agent once, and it can find, try and pay for any tool, with free trials, spend limits and one place to manage them.**

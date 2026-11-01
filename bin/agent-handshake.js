@@ -10,6 +10,7 @@ import { createGateway } from '../src/server.js';
 import { ConfigError, priceLabel, summarizeTerms, termsExtension } from '../src/terms.js';
 import { installLinks } from '../src/links.js';
 import { serverCard } from '../src/discovery.js';
+import { checkHub } from '../src/check.js';
 import { createDemoUpstream, demoConfig } from '../examples/demo/server.js';
 
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
@@ -46,6 +47,7 @@ ${c.b('Usage')}
   agent-handshake validate             Check the config and that your MCP server answers
   agent-handshake links <service-id>   Print install links, the button, and badge code
   agent-handshake card <service-id>    Print the MCP server card
+  agent-handshake check <url>          Test a running hub the way agent apps see it
   agent-handshake auto                 Start with your config if there is one, else the demo (for containers)
 
 ${c.b('Options')}
@@ -231,6 +233,29 @@ async function cmdLinks(args) {
   console.log(`\n${c.b('MCP URL')}\n  ${mcp}`);
 }
 
+async function cmdCheck(args) {
+  const url = args._[1];
+  if (!url) throw new ConfigError(['Give the hub address, e.g. agent-handshake check https://hub.example.com']);
+  console.log(`\nChecking ${c.b(url)}\n`);
+  const results = await checkHub(url);
+  let bad = 0;
+  for (const r of results) {
+    if (!r.ok) bad++;
+    console.log(`  ${r.ok ? c.green('✓') : c.red('✗')} ${r.name}${r.detail ? c.dim(`  ${r.detail}`) : ''}`);
+    if (!r.ok && r.fix) console.log(`      ${c.yellow(r.fix)}`);
+  }
+  const base = url.replace(/\/+$/, '');
+  if (bad) {
+    console.log(`\n${c.red(`${bad} problem${bad === 1 ? '' : 's'}`)} to fix before agent apps can connect.`);
+    process.exitCode = 1;
+  } else {
+    console.log(`\n${c.green('All good.')} Connect an agent to ${c.b(`${base}/mcp`)}:`);
+    console.log(`  Claude (claude.ai): Settings → Connectors → Add custom connector → ${base}/mcp`);
+    console.log(`  Claude Code:        claude mcp add --transport http agent-handshake ${base}/mcp`);
+    console.log(`  Or open ${base}/connect and pick your app.`);
+  }
+}
+
 async function cmdCard(args) {
   const config = loadConfig(args);
   console.log(JSON.stringify(serverCard(config, findService(config, args._[1])), null, 2));
@@ -289,7 +314,7 @@ async function main() {
   if (args.version) return console.log(pkg.version);
   const cmd = args._[0];
   if (!cmd || args.help || cmd === 'help') return console.log(HELP);
-  const commands = { start: cmdStart, demo: cmdDemo, auto: cmdAuto, init: cmdInit, validate: cmdValidate, links: cmdLinks, card: cmdCard };
+  const commands = { start: cmdStart, demo: cmdDemo, auto: cmdAuto, init: cmdInit, validate: cmdValidate, links: cmdLinks, card: cmdCard, check: cmdCheck };
   if (!commands[cmd]) {
     console.error(`Unknown command "${cmd}".\n${HELP}`);
     process.exit(1);

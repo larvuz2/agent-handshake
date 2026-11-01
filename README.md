@@ -200,6 +200,8 @@ Any agent app can read it and show the same three lines. Read the [spec](spec/SP
 
 ## Go live
 
+The full checklist, with a test plan for each agent app: [docs/LAUNCH.md](docs/LAUNCH.md). After deploying, run `npx github:larvuz2/agent-handshake check https://<your-hub>`.
+
 1. Deploy the gateway with Docker, Fly.io, Render or Railway. See [docs/deploy.md](docs/deploy.md).
 2. Set `PUBLIC_URL` to its HTTPS address.
 3. For real payments, set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
@@ -212,7 +214,7 @@ The landing page lives in [`site/`](site/). To publish it on **Netlify**, connec
 ## Docs
 
 - [The user experience, screen by screen](docs/user-experience.pdf) (one-page PDF; [single-tool version](docs/user-experience-single-tool.pdf))
-- [The pitch: business model and go-to-market](docs/PITCH.md)
+- [The pitch: business model and go-to-market](docs/PITCH.md), and the [pitch deck (PDF)](docs/pitch-deck.pdf)
 - [Publisher guide](docs/publishers.md): config, scopes, plans, payments, button, publisher API
 - [Agent apps and the host kit](docs/hosts.md): install links per app, building native support
 - [Deploy](docs/deploy.md): Docker, Fly.io, Render, Railway, tunnels, Stripe, x402
