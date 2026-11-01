@@ -33,6 +33,8 @@ It's built on standards that already exist: MCP, OAuth 2.1, MCP Server Cards, th
   <img src="docs/images/my-tools.png" alt="My tools page: Lumen Video on a free trial, working great, with Upgrade $9/mo, Keep free and Remove buttons. Quick Notes, unused, with a Remove button." width="420">
 </p>
 
+**See the whole user experience on one page:** [user-experience.pdf](docs/user-experience.pdf), screen by screen, from clicking the button to removing a tool.
+
 ## Try it in 60 seconds
 
 You need [Node.js 20+](https://nodejs.org). No install step and no dependencies.
@@ -204,6 +206,7 @@ The landing page lives in [`site/`](site/). To publish it on **Netlify**, connec
 
 ## Docs
 
+- [The user experience, screen by screen](docs/user-experience.pdf) (one-page PDF)
 - [Publisher guide](docs/publishers.md): config, scopes, plans, payments, button, publisher API
 - [Agent apps and the host kit](docs/hosts.md): install links per app, building native support
 - [Deploy](docs/deploy.md): Docker, Fly.io, Render, Railway, tunnels, Stripe, x402

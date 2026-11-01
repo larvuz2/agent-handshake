@@ -66,7 +66,8 @@ function lumenApp() {
       if (name === 'create_project') {
         if (!args.prompt) return text('prompt is required', true);
         const seconds = Math.max(5, Math.min(60, Number(args.seconds) || 15));
-        const words = String(args.prompt).split(/\s+/).filter((w) => w.length > 3);
+        const skip = new Set(['over', 'with', 'from', 'into', 'that', 'this', 'your', 'about', 'under', 'after', 'before', 'some', 'very']);
+        const words = String(args.prompt).split(/\s+/).filter((w) => w.length > 3 && !skip.has(w.toLowerCase()));
         const n = Math.max(3, Math.min(6, Math.round(seconds / 5)));
         const shots = Array.from({ length: n }, (_, i) => ({
           shot: i + 1,
