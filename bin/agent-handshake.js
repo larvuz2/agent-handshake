@@ -95,17 +95,19 @@ function banner(gw, { adminKeyShown, extra = [] } = {}) {
     `  ${c.b(c.blue('Agent Handshake'))} is running ${c.dim(`(payments: ${config.payments.mode})`)}`,
     '',
     `  Gateway       ${config.publicUrl}`,
+    `  ${c.b('Hub')}           ${config.publicUrl}/mcp   ${c.dim('one connection, every tool below')}`,
+    `                ${c.dim(`claude mcp add --transport http agent-handshake ${config.publicUrl}/mcp`)}`,
+    `  Connect page  ${config.publicUrl}/connect`,
     `  My tools      ${config.publicUrl}/my`,
     `  Publisher     ${config.publicUrl}/admin${adminKeyShown ? `   admin key: ${c.b(config.adminKey)}` : c.dim('   (admin key in .handshake/secrets.json)')}`,
     '',
   ];
+  lines.push(`  ${c.b(`${config.services.length} tools`)} ${c.dim('(Add-to-my-agent page · direct MCP URL)')}`);
+  const w = Math.max(...config.services.map((s) => s.title.length));
   for (const s of config.services) {
-    lines.push(`  ${c.b(s.title)}`);
-    lines.push(`    Install page   ${config.publicUrl}/add/${s.id}`);
-    lines.push(`    MCP URL        ${config.publicUrl}/mcp/${s.id}`);
-    lines.push(`    Claude Code    ${c.dim(`claude mcp add --transport http ${s.id} ${config.publicUrl}/mcp/${s.id}`)}`);
-    lines.push('');
+    lines.push(`    ${s.title.padEnd(w)}  ${config.publicUrl}/add/${s.id}  ${c.dim(`/mcp/${s.id}`)}`);
   }
+  lines.push('');
   if (config.local) {
     lines.push(c.dim('  Claude Code, Cursor, VS Code and Goose on this computer can use these URLs as they are.'));
     lines.push(c.dim('  For claude.ai or ChatGPT, give the gateway a public HTTPS URL (see docs/deploy.md).'));
@@ -154,7 +156,7 @@ async function cmdDemo(args) {
     adminKeyShown: !process.env.HANDSHAKE_ADMIN_KEY,
     extra: [
       c.dim(`  Demo tools run on 127.0.0.1:${upstreamPort} behind the gateway. Data: ${config.dataDir}`),
-      `  ${c.green('Start here:')} open ${c.b(`${config.publicUrl}/add/lumen-video`)}`,
+      `  ${c.green('Start here:')} open ${c.b(`${config.publicUrl}/`)} and click Connect your agent`,
       '',
     ],
   });

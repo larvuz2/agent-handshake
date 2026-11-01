@@ -18,9 +18,11 @@ describe('host kit', () => {
 
   test('discover from a site, an install page and an MCP URL', async () => {
     const fromSite = await discover(s.base);
-    assert.equal(fromSite.length, 2);
-    assert.equal(fromSite[0].sameOrigin, true);
-    assert.deepEqual(fromSite[0].summary.lines, [
+    assert.equal(fromSite.length, 6);
+    assert.ok(fromSite[0].hub, 'the hub comes first');
+    assert.deepEqual(fromSite[0].warnings, []);
+    assert.equal(fromSite[1].sameOrigin, true);
+    assert.deepEqual(fromSite[1].summary.lines, [
       'Create and read your video projects · Render 480p previews',
       'Free for 7 days · up to 100 calls',
       'Spend limit: $0. No card needed.',

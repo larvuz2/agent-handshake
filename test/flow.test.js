@@ -52,9 +52,10 @@ describe('discovery', () => {
   test('AI catalog, llms.txt, button and badge', async () => {
     const cat = await (await fetch(`${s.base}/.well-known/ai-catalog.json`)).json();
     assert.equal(cat.specVersion, '1.0');
-    assert.equal(cat.entries.length, 2);
+    assert.equal(cat.entries.length, 6, 'the hub plus five tools');
     assert.equal(cat.entries[0].type, 'application/mcp-server-card+json');
-    assert.match(cat.entries[0].identifier, /^urn:air:lumen\.example:mcp:lumen-video$/);
+    assert.equal(cat.entries[0].url, `${s.base}/mcp/server-card`);
+    assert.match(cat.entries[1].identifier, /^urn:air:lumen\.example:mcp:lumen-video$/);
     const llms = await (await fetch(`${s.base}/llms.txt`)).text();
     assert.match(llms, /Lumen Video/);
     assert.match(await (await fetch(`${s.base}/button.js`)).text(), /data-service/);

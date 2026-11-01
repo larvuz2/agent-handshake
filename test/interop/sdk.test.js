@@ -98,3 +98,43 @@ test('official MCP SDK client: OAuth + tools through the gateway', { skip: !sdk 
     await s.close();
   }
 });
+
+test('official MCP SDK client: connect the hub once, then find, add and use tools', { skip: !sdk && 'install dev dependencies first' }, async () => {
+  const s = await startStack();
+  try {
+    const url = new URL(`${s.base}/mcp`);
+    const provider = new TestProvider();
+    const client = new sdk.Client({ name: 'sdk-hub', version: '1.0.0' });
+    await assert.rejects(client.connect(new sdk.StreamableHTTPClientTransport(url, { authProvider: provider })), (err) => err instanceof sdk.UnauthorizedError);
+    assert.equal(provider.authUrl.searchParams.get('resource'), url.href);
+
+    const browser = new Browser();
+    const html = await (await browser.get(provider.authUrl.href)).text();
+    assert.match(html, /MCP SDK Client wants to connect to Agent Handshake/);
+    const decided = await browser.post(`${s.base}/oauth/authorize`, { ...formFields(html), auto: '1', decision: 'allow' });
+    const code = new URL(decided.headers.get('location')).searchParams.get('code');
+    await new sdk.StreamableHTTPClientTransport(url, { authProvider: provider }).finishAuth(code);
+
+    const agent = new sdk.Client({ name: 'sdk-hub', version: '1.0.0' });
+    let changed = 0;
+    await agent.connect(new sdk.StreamableHTTPClientTransport(url, { authProvider: provider }));
+    agent.setNotificationHandler((await import('@modelcontextprotocol/sdk/types.js')).ToolListChangedNotificationSchema, () => {
+      changed++;
+    });
+
+    const first = await agent.listTools();
+    assert.ok(first.tools.some((t) => t.name === 'handshake_search'));
+    const found = await agent.callTool({ name: 'handshake_search', arguments: { query: 'convert units' } });
+    assert.match(found.content[0].text, /Unit Converter \(unit-converter\)/);
+    const added = await agent.callTool({ name: 'handshake_add', arguments: { tool: 'unit-converter' } });
+    assert.match(added.content[0].text, /Added Unit Converter/);
+    assert.equal(changed, 1, 'the SDK received tools/list_changed');
+    const second = await agent.listTools();
+    assert.ok(second.tools.some((t) => t.name === 'unit-converter__convert'));
+    const r = await agent.callTool({ name: 'unit-converter__convert', arguments: { value: 5, from: 'mi', to: 'km' } });
+    assert.match(r.content[0].text, /5 mi = 8\.0467 km/);
+    await agent.close();
+  } finally {
+    await s.close();
+  }
+});
