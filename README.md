@@ -212,7 +212,7 @@ The landing page lives in [`site/`](site/). To publish it on **Netlify**, connec
 ## Docs
 
 - [The user experience, screen by screen](docs/user-experience.pdf) (one-page PDF; [single-tool version](docs/user-experience-single-tool.pdf))
-- [The pitch: business model and go-to-market](docs/PITCH.md)
+- [The pitch: business model and go-to-market](docs/PITCH.md), and the [pitch deck (PDF)](docs/pitch-deck.pdf)
 - [Publisher guide](docs/publishers.md): config, scopes, plans, payments, button, publisher API
 - [Agent apps and the host kit](docs/hosts.md): install links per app, building native support
 - [Deploy](docs/deploy.md): Docker, Fly.io, Render, Railway, tunnels, Stripe, x402
