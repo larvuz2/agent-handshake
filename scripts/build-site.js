@@ -14,7 +14,7 @@ for (const name of readdirSync(site)) {
 }
 // Brand files and real product screenshots.
 for (const f of ['handshake.css', 'mark.svg', 'logo.svg']) cpSync(new URL(`brand/${f}`, root), new URL(`assets/${f}`, out));
-for (const f of ['consent.png', 'my-tools.png', 'install.png']) {
+for (const f of ['consent.png', 'my-tools.png', 'install.png', 'hub-consent.png', 'storefront.png']) {
   const src = new URL(`docs/images/${f}`, root);
   if (existsSync(src)) cpSync(src, new URL(`assets/${f}`, out));
 }

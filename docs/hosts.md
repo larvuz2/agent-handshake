@@ -2,6 +2,12 @@
 
 Agent Handshake works with today's agent apps without any change on their side. Apps that want to go further can read the terms natively with the host kit.
 
+## The hub: connect once
+
+The simplest setup for any agent app: add one remote MCP server, `https://<hub>/mcp` (Claude Code: `claude mcp add --transport http agent-handshake https://<hub>/mcp`). The agent then gets seven tools (`handshake_search`, `handshake_add`, `handshake_call`, `handshake_tool_info`, `handshake_my_tools`, `handshake_upgrade`, `handshake_remove`) and every tool it adds shows up as `tool__action`. The hub sends `notifications/tools/list_changed` when tools are added or removed.
+
+The install links below work for the hub URL and for single tools alike.
+
 ## Install links per app
 
 The install page (`/add/<id>`) builds these for you. They carry a name and a URL only, never a secret. Formats were checked against each vendor's docs in November 2026.

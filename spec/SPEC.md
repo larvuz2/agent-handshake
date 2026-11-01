@@ -147,7 +147,46 @@ Before accepting a payment, the gateway MUST check the plan's `spendUsd` and SHO
 
 When forwarding, a gateway SHOULD send `X-Handshake-User`, `X-Handshake-Entitlement`, `X-Handshake-Plan` and `X-Handshake-Scopes` so the server can serve per-person data.
 
-## 4. Gateway API
+## 4. The hub (aggregator)
+
+A hub is one MCP server that gives an agent access to many tools. It lives at `<gateway>/mcp`, uses the same OAuth flow (the person approves once), and is described by a server card at `<gateway>/mcp/server-card` with `_meta["dev.handshake/hub"]`:
+
+```json
+{
+  "specVersion": "0.2",
+  "catalog": "https://hub.example/.well-known/ai-catalog.json",
+  "agentGuide": "https://hub.example/agents",
+  "tools": [{ "id": "lumen-video", "title": "Lumen Video", "card": "https://hub.example/mcp/lumen-video/server-card" }],
+  "agentTools": ["handshake_search", "handshake_add", "handshake_call", "handshake_tool_info", "handshake_my_tools", "handshake_upgrade", "handshake_remove"],
+  "connect": "https://hub.example/connect",
+  "manage": "https://hub.example/my"
+}
+```
+
+The hub SHOULD be the first entry of the AI Catalog, and its `llms.txt` SHOULD tell agents how to connect.
+
+### 4.1 Agent tools
+
+| Tool | Does |
+|---|---|
+| `handshake_search {query}` | Finds tools by need. Returns id, description, the three lines' duration and price, and status for this person. |
+| `handshake_add {tool}` | Starts the default plan when it is free **and** the person allowed agents to start trials. Otherwise returns a link for the person. |
+| `handshake_call {tool, action, arguments}` | Runs an action of an added tool. |
+| `handshake_tool_info {tool}` | Plans, actions and input schemas. |
+| `handshake_my_tools` | Plans, days left, calls, usage labels, and a sign-in link to manage them. |
+| `handshake_upgrade {tool, plan?}` | Links where the person picks a paid plan. |
+| `handshake_remove {tool}` | Ends access. Agents SHOULD only call it when the person asks. |
+
+### 4.2 Added tools
+
+Each added tool's actions appear in `tools/list` as `<tool>__<action>`, limited to the plan's scopes. Calls go through the same checks as §3 (status, scope, cap, spend, x402). When a tool is added or removed, the hub SHOULD send `notifications/tools/list_changed` (session-based clients) and MUST NOT mark the list `cacheScope: "public"` (stateless clients).
+
+### 4.3 Person controls
+
+- "Let my agent start free trials" is set on the hub consent screen and can be changed later.
+- Paid plans always need the person, through a checkout page.
+
+## 5. Gateway API
 
 Publisher endpoints, authenticated with `Authorization: Bearer <admin key>`:
 
@@ -162,7 +201,7 @@ POST   /v1/entitlements/{id}/upgrade       { planId }  ->  { url }  a checkout U
 POST   /v1/entitlements/{id}/extend        { days }
 ```
 
-## 5. Usage labels
+## 6. Usage labels
 
 Gateways and apps SHOULD use the same labels so people see the same thing everywhere:
 
@@ -176,9 +215,10 @@ Gateways and apps SHOULD use the same labels so people see the same thing everyw
 | Try more | under 3 calls in 7 days |
 | In use | anything else |
 
-## 6. Open questions
+## 7. Open questions
 
 - A permanent namespace and domain.
 - Signed terms (detached JWS over the card), so terms can be verified when served by a third party.
 - Cross-gateway reputation that stays private by default.
 - An x402 binding for `input_required` results.
+- Federation: a hub listing tools that live on other gateways (the hub as an OAuth client of each).

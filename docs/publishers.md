@@ -2,6 +2,12 @@
 
 You have an MCP server. This guide puts it behind Agent Handshake so people can add it to their agent with one click, try it free, and pay for it.
 
+## 0. How your tool reaches agents
+
+Every gateway is also a **hub**: an agent that connects to `https://<gateway>/mcp` once can search all the tools you list, start their trials and use them. Your "Add to my agent" button (`/add/<id>`) connects a person's agent to the hub the first time, bringing your tool along, and is one click after that. People who prefer can still add your tool on its own, as a separate connector.
+
+Give each tool good `tags` and a clear `description`: that's what agents search.
+
 ## 1. Requirements
 
 - A **remote MCP server** that speaks Streamable HTTP (any MCP version from 2025-03-26 to 2026-07-28). If your server only speaks stdio, wrap it first with a stdio-to-HTTP bridge.
@@ -57,6 +63,7 @@ This writes `handshake.config.json`. You can also write it by hand. Your editor 
 | `id` | Short id used in URLs: `/add/<id>`, `/mcp/<id>`. Lowercase letters, digits and dashes. |
 | `name` | Reverse-DNS name as in the MCP Registry, with exactly one `/` (e.g. `com.lumenvideo/mcp`). |
 | `title`, `description`, `version`, `icon` | What people see. The server card keeps the description to 100 characters. |
+| `tags` | Words agents and people search for, e.g. `["video", "creative"]`. |
 | `publisher` | `name`, `domain`, `url`. The consent screen shows a **verified** shield only when the gateway's own HTTPS address is on `domain` (for example `agents.lumenvideo.com`). Otherwise it shows the name and the gateway's host, with no claim. |
 | `upstream.url` | Your MCP server. |
 | `upstream.headers` | Headers the gateway sends to your server, typically your API key. Use `${env:NAME}` so secrets stay out of the file. |

@@ -3,27 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent Handshake: one-click install, free trials and payments for AI agent tools</title>
-<meta name="description" content="Give your MCP server an “Add to my agent” button. People click, read three lines, and start a free trial in Claude, Cursor or VS Code. No pasting, no API keys. Open source.">
+<title>Agent Handshake: the open agent aggregator</title>
+<meta name="description" content="Connect your AI agent once. It can then find, try and use every tool on Agent Handshake, with free trials, spend limits and one place to manage them. No pasting, no API keys. Open source.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Agent Handshake: add to my agent in three clicks">
-<meta property="og:description" content="One-click install, free trials, usage tracking and payments for any MCP server. Open source.">
+<meta property="og:title" content="Agent Handshake: every tool for your agent, one handshake">
+<meta property="og:description" content="The open agent aggregator. Connect once; your agent finds, tries and uses tools on its own.">
 <meta property="og:image" content="/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#2B59FF">
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/assets/handshake.css">
 <link rel="stylesheet" href="/assets/landing.css">
+<script src="/config.js"></script>
 </head>
 <body>
 
 <header class="ah-header"><div class="ah-wrap">
   <a class="ah-brand" href="/"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="hm"><rect x="22" y="36" width="20" height="16"/></clipPath></defs><rect x="6.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#2B59FF" stroke-width="7"/><rect x="24.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#12B886" stroke-width="7"/><rect x="6.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#2B59FF" stroke-width="7" clip-path="url(#hm)"/></svg><span>Agent Handshake</span></a>
   <nav class="ah-nav">
-    <a class="ah-hide-sm" href="#demo">Demo</a>
-    <a class="ah-hide-sm" href="#users">How it works</a>
-    <a class="ah-hide-sm" href="#faq">FAQ</a>
-    <a class="ah-btn ah-btn--sm" href="#start">Get started</a>
+    <a class="ah-hide-sm" href="#people">For people</a>
+    <a class="ah-hide-sm" href="#agents">For agents</a>
+    <a class="ah-hide-sm" href="#makers">For tool makers</a>
+    <a class="ah-btn ah-btn--sm" data-hub="/connect" href="#start">Connect your agent</a>
   </nav>
 </div></header>
 
@@ -32,239 +33,181 @@
 <!-- HERO -->
 <section class="lp-hero"><div class="ah-wrap lp-hero-grid">
   <div class="lp-hero-copy">
-    <span class="ah-kicker">Free &amp; open source</span>
-    <h1>Turn your AI tool into a <span class="lp-hl">one-click install</span>.</h1>
-    <p class="lp-lede">Agent Handshake gives any MCP server an <b>Add to my agent</b> button, a free trial, usage tracking and payments. People click, read three lines, and it works in Claude, Cursor or VS Code. No pasting. No API keys.</p>
+    <span class="ah-kicker">The open agent aggregator</span>
+    <h1>Every tool for your agent. <span class="lp-hl">One handshake.</span></h1>
+    <p class="lp-lede">Connect your AI agent to Agent Handshake once. From then on it can <b>find, try and use</b> tools by itself, with free trials, spend limits and one place to manage everything. No more “paste this into your agent”.</p>
     <div class="lp-cta-row">
-      <a class="ah-btn ah-btn--xl" href="#start">Get started free</a>
-      <a class="ah-btn ah-btn--lg ah-btn--ghost" href="#demo">Try the 3 clicks ↓</a>
+      <a class="ah-btn ah-btn--xl" data-hub="/connect" href="#start">Connect your agent</a>
+      <a class="ah-btn ah-btn--lg ah-btn--ghost" href="#demo">Watch an agent do it ↓</a>
     </div>
-    <div class="lp-cmd" role="group" aria-label="Run the demo">
-      <code>npx github:larvuz2/agent-handshake demo</code>
-      <button type="button" class="lp-copy" data-copy="npx github:larvuz2/agent-handshake demo">Copy</button>
+    <div class="lp-persona" role="group" aria-label="Who are you?">
+      <span>I am</span>
+      <a href="#people">a person with an agent</a>
+      <a href="#agents">an AI agent</a>
+      <a href="#makers">building a tool</a>
     </div>
-    <p class="lp-proof">MIT licensed · No dependencies · Tested with the official MCP SDK</p>
   </div>
   <div class="lp-hero-art" aria-hidden="true">
-    <div class="lp-float lp-float-1">
-      <div class="mini-dialog">
-        <b>Claude wants to add Lumen Video</b>
-        <div class="mini-line"><i class="d-blue"></i>Read your projects</div>
-        <div class="mini-line"><i class="d-mint"></i>Free for 7 days</div>
-        <div class="mini-line"><i class="d-amber"></i>Spend limit: $0</div>
-        <div class="mini-btns"><span>Cancel</span><span class="go">Start free trial</span></div>
-      </div>
+    <div class="lp-chatcard">
+      <div class="b me">Make me a 15-second video of a sunrise.</div>
+      <span class="chip">handshake_search · “video”</span>
+      <div class="found"><span class="mi">L</span><div><b>Lumen Video</b><small>Free for 7 days · $0 spend limit</small></div><span class="ok">+ Add</span></div>
+      <span class="chip">handshake_add · lumen-video</span>
+      <span class="chip">lumen-video__create_project</span>
+      <div class="b bot">Done: 3 shots, sunrise over the lake. Want a preview?</div>
     </div>
-    <div class="lp-float lp-float-2">
-      <div class="mini-tool"><span class="mi">L</span><div><b>Lumen Video</b><small class="ok">● Working great</small></div><span class="mini-cta">Upgrade $9/mo</span></div>
-      <div class="mini-tool"><span class="mi grey">O</span><div><b>Old Notes Tool</b><small class="warn">● Unused</small></div><span class="mini-cta red">Remove</span></div>
-    </div>
-    <div class="lp-float lp-float-3"><span class="ah-add"><svg viewBox="0 0 64 64"><defs><clipPath id="hb"><rect x="22" y="36" width="20" height="16"/></clipPath></defs><rect x="6.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#fff" stroke-width="7"/><rect x="24.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#bfe9ff" stroke-width="7"/><rect x="6.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#fff" stroke-width="7" clip-path="url(#hb)"/></svg>Add to my agent</span></div>
   </div>
 </div></section>
 
 <section class="lp-apps"><div class="ah-wrap">
-  <p>Works with the agent apps your users already have</p>
+  <p>Connect from the agent apps people already use</p>
   <ul><li>Claude</li><li>Claude Code</li><li>Cursor</li><li>VS Code</li><li>Goose</li><li>LM Studio</li><li>ChatGPT</li></ul>
 </div></section>
 
 <!-- DEMO -->
 <section class="ah-section" id="demo"><div class="ah-wrap">
   <div class="lp-head">
-    <h2>Three clicks, zero pasting. Try it.</h2>
-    <p class="ah-muted">This is what your users see. Click through it.</p>
+    <h2>Watch an agent get a new skill</h2>
+    <p class="ah-muted">The person asks for something the agent can't do. The agent finds a tool, starts its free trial, and does the job. Nobody pastes anything.</p>
   </div>
-  <div class="demo" data-step="0">
-    <ol class="demo-steps" aria-label="Progress">
-      <li data-i="0">Click</li><li data-i="1">Pick app</li><li data-i="2">Approve</li><li data-i="3">Use it</li><li data-i="4">Keep or remove</li>
-    </ol>
+  <div class="agentdemo">
     <div class="demo-window">
-      <div class="demo-bar"><i></i><i></i><i></i><span class="demo-url">lumenvideo.com</span></div>
-      <div class="demo-body" aria-live="polite">
-
-        <div class="demo-pane" data-pane="0">
-          <div class="demo-site">
-            <div class="demo-nav"><b>Lumen Video</b><span>Pricing</span><span>Docs</span></div>
-            <h3>Videos from a prompt, inside your agent</h3>
-            <p>Storyboards, previews and 4K renders.</p>
-            <button type="button" class="ah-add demo-pulse" data-go="1"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="hd"><rect x="22" y="36" width="20" height="16"/></clipPath></defs><rect x="6.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#fff" stroke-width="7"/><rect x="24.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#bfe9ff" stroke-width="7"/><rect x="6.5" y="19" width="33" height="26" rx="13" fill="none" stroke="#fff" stroke-width="7" clip-path="url(#hd)"/></svg>Add to my agent</button>
-          </div>
-        </div>
-
-        <div class="demo-pane" data-pane="1" hidden>
-          <h3 class="demo-q">Which agent app do you use?</h3>
-          <div class="demo-apps">
-            <button type="button" data-app="Claude" data-go="2">Claude</button>
-            <button type="button" data-app="Cursor" data-go="2">Cursor</button>
-            <button type="button" data-app="VS Code" data-go="2">VS Code</button>
-            <button type="button" data-app="Claude Code" data-go="2">Claude Code</button>
-          </div>
-          <p class="demo-note">The button opens the right install link for that app. Nothing to copy.</p>
-        </div>
-
-        <div class="demo-pane" data-pane="2" hidden>
-          <div class="demo-consent">
-            <h3><span class="js-app">Claude</span> wants to add Lumen Video to your agent</h3>
-            <ul class="ah-terms">
-              <li><span class="ah-ti ah-ti--access">✓</span><div><b>Read your projects · Render previews</b><span>Can access</span></div></li>
-              <li><span class="ah-ti ah-ti--time">7</span><div><b>Free for 7 days · up to 100 calls</b><span>Plan: Free trial</span></div></li>
-              <li><span class="ah-ti ah-ti--spend">$</span><div><b>Spend limit: $0. No card needed.</b><span>Nothing is charged during the trial</span></div></li>
-            </ul>
-            <div class="demo-btns"><button type="button" class="ah-btn ah-btn--ghost" data-go="0">Cancel</button><button type="button" class="ah-btn" data-go="3">Start free trial</button></div>
-          </div>
-        </div>
-
-        <div class="demo-pane" data-pane="3" hidden>
-          <div class="demo-chat">
-            <div class="msg me">Make a 15-second video of a sunrise over a lake.</div>
-            <div class="msg bot"><b>Lumen Video</b> · created <code>prj_001</code> with 3 shots: wide establishing shot, slow push-in, close-up. Want a preview?</div>
-            <div class="msg me">What's my Lumen plan?</div>
-            <div class="msg bot">Free trial: 7 days left, 2 of 100 calls used. Upgrade to Pro for 4K renders ($9/mo).</div>
-          </div>
-          <div class="demo-btns"><button type="button" class="ah-btn" data-go="4">A week later: open My tools →</button></div>
-        </div>
-
-        <div class="demo-pane" data-pane="4" hidden>
-          <h3 class="demo-q">My tools</h3>
-          <div class="demo-tool" data-tool="lumen">
-            <span class="mi">L</span>
-            <div><b>Lumen Video</b> <span class="ah-pill ah-pill--good">Working great</span><small>24 calls this week · 100% ok</small></div>
-            <div class="demo-acts"><button type="button" class="ah-btn ah-btn--sm" data-upgrade>Upgrade $9/mo</button><button type="button" class="ah-btn ah-btn--sm ah-btn--ghost" data-keep>Keep free</button></div>
-          </div>
-          <div class="demo-tool" data-tool="notes">
-            <span class="mi grey">O</span>
-            <div><b>Old Notes Tool</b> <span class="ah-pill ah-pill--warn">Unused</span><small>No calls in 14 days</small></div>
-            <div class="demo-acts"><button type="button" class="ah-btn ah-btn--sm ah-btn--coral" data-remove>Remove</button></div>
-          </div>
-          <p class="demo-toast" hidden></p>
-          <div class="demo-btns"><button type="button" class="ah-btn ah-btn--ghost ah-btn--sm" data-go="0">Start over</button><a class="ah-btn ah-btn--sm" href="#start">Give my tool this →</a></div>
-        </div>
-
-      </div>
+      <div class="demo-bar"><i></i><i></i><i></i><span class="demo-url">Your agent · connected to Agent Handshake</span></div>
+      <div class="ad-body" aria-live="polite"></div>
     </div>
-    <p class="demo-behind"><b>Behind the scenes:</b> <span class="js-behind">The site publishes an MCP server card. The button picks the right install link per app.</span></p>
+    <div class="ad-controls">
+      <button type="button" class="ah-btn" data-ad="next">Next step</button>
+      <button type="button" class="ah-btn ah-btn--ghost" data-ad="all">Show all</button>
+      <button type="button" class="ah-btn ah-btn--ghost" data-ad="reset">Restart</button>
+    </div>
+    <p class="demo-behind"><b>Behind the scenes:</b> <span class="ad-behind">One MCP connection to the hub. The agent uses its search and add tools.</span></p>
   </div>
 </div></section>
 
-<!-- WHY -->
-<section class="ah-section lp-soft"><div class="ah-wrap">
-  <div class="lp-head"><h2>“Paste this into your agent” loses users</h2>
-  <p class="ah-muted">Every copy-paste step is a place people give up, and an API key in a chat window is a key you can't take back.</p></div>
-  <div class="lp-vs">
-    <div class="lp-vs-col bad">
-      <h3>Today</h3>
-      <ul>
-        <li>Copy a block of text or an API key into the agent</li>
-        <li>No trial: pay first or give up</li>
-        <li>No idea if anyone actually uses it</li>
-        <li>No clean way to remove it</li>
-        <li>When the tool changes, nobody finds out</li>
-      </ul>
-    </div>
-    <div class="lp-vs-col good">
-      <h3>With Agent Handshake</h3>
-      <ul>
-        <li>One button opens the right app. Nothing to copy</li>
-        <li>Free trial with a $0 spend limit by default</li>
-        <li>Every call metered: you see what's working</li>
-        <li>Remove revokes access in one click</li>
-        <li>Plans, scopes and terms are versioned and visible</li>
-      </ul>
-    </div>
+<!-- PEOPLE -->
+<section class="ah-section lp-soft" id="people"><div class="ah-wrap">
+  <div class="lp-head"><span class="ah-kicker">For people</span><h2>Connect once. Then every tool is one click, or zero.</h2>
+  <p class="ah-muted">No accounts, no API keys, no copy and paste. You stay in charge of what's added and what's paid.</p></div>
+  <div class="lp-steps">
+    <div class="lp-step"><span class="n">1</span><h3>Connect your agent, once</h3><p>Pick Claude, Cursor, VS Code or another app. Approve one screen. About 30 seconds.</p></div>
+    <div class="lp-step"><span class="n">2</span><h3>Ask, or click “Try free”</h3><p>Your agent finds and adds tools when you ask for something new. Or add any tool from the catalog with one click.</p></div>
+    <div class="lp-step"><span class="n">3</span><h3>Keep what works</h3><p>Free trials, a $0 spend limit by default, usage labels, and one page to upgrade or remove anything.</p></div>
   </div>
-</div></section>
-
-<!-- USERS: onboarding -->
-<section class="ah-section" id="users"><div class="ah-wrap">
-  <div class="lp-head"><h2>For your users: it takes under a minute</h2>
-  <p class="ah-muted">No account to create, no key to copy. This is the whole onboarding.</p></div>
-  <ol class="lp-journey">
-    <li><span class="n">1</span><div><b>Click “Add to my agent”</b><p>On your website, docs or README. They pick Claude, Cursor, VS Code or another app.</p></div></li>
-    <li><span class="n">2</span><div><b>Their app asks to connect</b><p>Claude shows “Add”, Cursor shows “Install”. One click.</p></div></li>
-    <li><span class="n">3</span><div><b>Read three lines, start the trial</b><p>What it can access, how long it's free, the spend limit. Then <i>Start free trial</i>.</p></div></li>
-    <li><span class="n">4</span><div><b>Just ask their agent</b><p>The tools appear right away. Asking “what's my plan?” shows days left and usage.</p></div></li>
-    <li><span class="n">5</span><div><b>Keep, upgrade or remove</b><p>When the trial ends, the agent hands them an upgrade link. Payment happens on a normal checkout page, never in the chat.</p></div></li>
-  </ol>
   <div class="lp-shots">
-    <figure><img src="/assets/consent.png" alt="The real consent screen: Claude wants to add Lumen Video to your agent, with three lines and a Start free trial button" loading="lazy" width="528" height="626"><figcaption>The real consent screen</figcaption></figure>
-    <figure><img src="/assets/my-tools.png" alt="The real My tools page with usage labels and Upgrade, Keep free and Remove buttons" loading="lazy" width="852" height="439"><figcaption>The real My tools page</figcaption></figure>
+    <figure><img src="/assets/hub-consent.png" alt="The real connect screen: Claude wants to connect to Agent Handshake. Find, try and use tools for you; free trials start on their own; spend limit $0, paid plans always need your OK." loading="lazy" width="528" height="634"><figcaption>The one screen you approve</figcaption></figure>
+    <figure><img src="/assets/storefront.png" alt="The real catalog: tools with free trials and Add to my agent buttons" loading="lazy" width="1048" height="720"><figcaption>The catalog: one click per tool</figcaption></figure>
+  </div>
+</div></section>
+
+<!-- AGENTS -->
+<section class="ah-section" id="agents"><div class="ah-wrap">
+  <div class="lp-head"><span class="ah-kicker">For agents</span><h2>One front door to every tool</h2>
+  <p class="ah-muted">Agents discover Agent Handshake on their own and get a small, stable set of tools to grow their abilities.</p></div>
+  <div class="lp-agent-grid">
+    <pre class="lp-agentdoc"><span class="c"># If you are an AI agent, read this</span>
+<b>connect</b>    <span data-hub-text="/mcp">https://your-hub.example/mcp</span>
+           MCP over HTTP, OAuth 2.1. The person approves once.
+
+<b>then</b>       handshake_search   find a tool for the job
+           handshake_add      start its free trial
+           tool__action       use it (or handshake_call right away)
+
+<b>rules</b>      free trials start on their own if the person allows it
+           paid plans: give the person the handshake_upgrade link
+           never ask for card details in chat
+
+<b>discover</b>   /.well-known/ai-catalog.json
+           /llms.txt · /mcp/server-card</pre>
+    <div class="lp-agent-points">
+      <div><h3>Found without a human</h3><p>Every hub publishes an AI Catalog, an <code>llms.txt</code> written for agents, and an MCP Server Card, so agents and registries can find it.</p></div>
+      <div><h3>Seven tools, unlimited abilities</h3><p>Search, add, call, info, my tools, upgrade, remove. Added tools also appear natively as <code>tool__action</code>.</p></div>
+      <div><h3>Safe to say yes to</h3><p>Every call is checked against the tool's plan. Trials cost $0. Money only moves after a person approves on a checkout page, or within their x402 spend limits.</p></div>
+    </div>
   </div>
 </div></section>
 
 <!-- MAKERS -->
-<section class="ah-section lp-soft" id="start"><div class="ah-wrap">
-  <div class="lp-head"><h2>For tool makers: live in 5 minutes</h2>
-  <p class="ah-muted">Your MCP server doesn't change. The gateway sits in front of it.</p></div>
+<section class="ah-section lp-soft" id="makers"><div class="ah-wrap">
+  <div class="lp-head"><span class="ah-kicker">For tool makers</span><h2>Reach every connected agent</h2>
+  <p class="ah-muted">List your MCP server and agents can find it, try it and pay for it. Your server doesn't change.</p></div>
   <div class="lp-steps">
-    <div class="lp-step">
-      <span class="n">1</span>
-      <h3>See it work</h3>
-      <p>Run the demo. Two sample tools, test payments, nothing to install.</p>
-      <div class="lp-cmd"><code>npx github:larvuz2/agent-handshake demo</code><button type="button" class="lp-copy" data-copy="npx github:larvuz2/agent-handshake demo">Copy</button></div>
-    </div>
-    <div class="lp-step">
-      <span class="n">2</span>
-      <h3>Point it at your server</h3>
-      <p>Answer 9 questions: your server URL, trial length, price.</p>
-      <div class="lp-cmd"><code>npx github:larvuz2/agent-handshake init</code><button type="button" class="lp-copy" data-copy="npx github:larvuz2/agent-handshake init">Copy</button></div>
-    </div>
-    <div class="lp-step">
-      <span class="n">3</span>
-      <h3>Deploy and add the button</h3>
-      <p>Docker, Render, Fly or Railway. Then one line on your site.</p>
-      <div class="lp-cmd"><code>&lt;script src="https://your-gateway/button.js" data-service="your-tool"&gt;&lt;/script&gt;</code><button type="button" class="lp-copy" data-copy='&lt;script src="https://your-gateway/button.js" data-service="your-tool" async&gt;&lt;/script&gt;'>Copy</button></div>
-    </div>
+    <div class="lp-step"><span class="n">1</span><h3>See it work</h3><p>Run a hub with five demo tools on your computer. Nothing to install.</p>
+      <div class="lp-cmd"><code>npx github:larvuz2/agent-handshake demo</code><button type="button" class="lp-copy" data-copy="npx github:larvuz2/agent-handshake demo">Copy</button></div></div>
+    <div class="lp-step"><span class="n">2</span><h3>Add your tool</h3><p>Point it at your MCP server and set the trial and price. Nine questions.</p>
+      <div class="lp-cmd"><code>npx github:larvuz2/agent-handshake init</code><button type="button" class="lp-copy" data-copy="npx github:larvuz2/agent-handshake init">Copy</button></div></div>
+    <div class="lp-step"><span class="n">3</span><h3>Get users and revenue</h3><p>Agents find you through search. People find you through your “Add to my agent” button. Paid plans go through Stripe or x402.</p>
+      <div class="lp-cmd"><code>&lt;script src="https://your-hub/button.js" data-service="your-tool"&gt;</code><button type="button" class="lp-copy" data-copy='&lt;script src="https://your-hub/button.js" data-service="your-tool" async&gt;&lt;/script&gt;'>Copy</button></div></div>
   </div>
-  <div class="lp-cta-row" style="justify-content:center;margin-top:28px">
-    <a class="ah-btn ah-btn--lg" href="https://github.com/larvuz2/agent-handshake#try-it-in-60-seconds">Read the quickstart</a>
-    <a class="ah-btn ah-btn--lg ah-btn--ghost" href="https://render.com/deploy?repo=https://github.com/larvuz2/agent-handshake">Deploy to Render</a>
+</div></section>
+
+<!-- PROTOCOL -->
+<section class="ah-section"><div class="ah-wrap">
+  <div class="lp-head"><h2>Is it a protocol or a product? Both.</h2>
+  <p class="ah-muted">Like email: an open standard anyone can use, and a great place to use it.</p></div>
+  <div class="lp-vs">
+    <div class="lp-vs-col good">
+      <h3>The open protocol</h3>
+      <ul>
+        <li>Built on MCP, OAuth 2.1, Server Cards, AI Catalog and x402</li>
+        <li>Adds what's missing: trial and price terms (<code>dev.handshake/terms</code>), a hub card, one install link, entitlements</li>
+        <li>Any agent app or tool can implement it. MIT licensed</li>
+      </ul>
+    </div>
+    <div class="lp-vs-col good">
+      <h3>The aggregator</h3>
+      <ul>
+        <li>An open-source hub anyone can run, in one command</li>
+        <li>A flagship hub with the biggest catalog, so people connect once</li>
+        <li>Trials, metering, payments and keep/drop signals in one place</li>
+      </ul>
+    </div>
   </div>
 </div></section>
 
 <!-- FEATURES -->
-<section class="ah-section"><div class="ah-wrap">
-  <div class="lp-head"><h2>Everything between “click” and “paid”</h2></div>
+<section class="ah-section lp-soft"><div class="ah-wrap">
+  <div class="lp-head"><h2>Everything between “I need a tool” and “it's working”</h2></div>
   <div class="lp-features">
-    <div><h3>Free trials, done for you</h3><p>Days, call caps, scopes. Locked tools stay hidden until people upgrade.</p></div>
-    <div><h3>Get paid</h3><p>Stripe subscriptions, your own checkout, or x402 pay-per-call in USDC.</p></div>
-    <div><h3>Know what's used</h3><p>Installs, trials, conversions and calls per tool, in your dashboard and API.</p></div>
-    <div><h3>Upgrade prompts that land</h3><p>When a limit is hit, the agent hands over a link. Apps that support it open the page for you.</p></div>
-    <div><h3>Secure by default</h3><p>OAuth 2.1 with PKCE, tokens bound to one tool, $0 trial spend, no keys in links.</p></div>
-    <div><h3>Built on standards</h3><p>MCP, OAuth, Server Cards, AI Catalog, x402. No new manifest to adopt.</p></div>
+    <div><h3>Search by need</h3><p>Agents search the catalog in plain words, by what the person asked for.</p></div>
+    <div><h3>Instant free trials</h3><p>Scoped, expiring, metered. Paid-only actions stay hidden until an upgrade.</p></div>
+    <div><h3>One place to manage</h3><p>Every tool, plan and usage label on one page. Remove anything in one click.</p></div>
+    <div><h3>Payments that land</h3><p>Stripe subscriptions, the maker's own checkout, or x402 pay-per-call within spend limits.</p></div>
+    <div><h3>Works with today's apps</h3><p>Session-based and stateless MCP, JSON and streaming, tested with the official MCP SDK.</p></div>
+    <div><h3>Open and self-hostable</h3><p>One Node process, no dependencies. Docker, Render, Fly or Railway.</p></div>
   </div>
 </div></section>
 
 <!-- FAQ -->
-<section class="ah-section lp-soft" id="faq"><div class="ah-wrap lp-faq">
+<section class="ah-section" id="faq"><div class="ah-wrap lp-faq">
   <div class="lp-head"><h2>Questions</h2></div>
-  <details><summary>Do I have to change my MCP server?</summary><p>No. The gateway sits in front of it and calls it with your own key. It also tells your server who is calling (<code>X-Handshake-User</code>), so you can show each person their own data.</p></details>
-  <details><summary>What does it cost?</summary><p>Nothing. It's MIT-licensed open source that you host yourself. Payment providers charge their usual fees.</p></details>
-  <details><summary>Which agent apps work?</summary><p>Claude (web, desktop, mobile), Claude Code, Cursor, VS Code, Goose, LM Studio and ChatGPT developer mode, plus any app that supports remote MCP servers with OAuth.</p></details>
-  <details><summary>Do my users need an account?</summary><p>No. They approve once in their browser. Their agent can give them a link to <i>My tools</i> anytime.</p></details>
-  <details><summary>Do I need crypto?</summary><p>No. Stripe subscriptions work out of the box. x402 pay-per-call is optional, for agents that pay on their own.</p></details>
-  <details><summary>Where does the data live?</summary><p>On your gateway, in one file you can back up. Usage is never shared with anyone else.</p></details>
-  <details><summary>How is this different from an MCP registry?</summary><p>Registries help people find tools. Agent Handshake handles what comes next: the install, the trial, the limits, the upgrade and the uninstall.</p></details>
+  <details><summary>How is this different from pasting instructions into my agent?</summary><p>Pasting is manual, unverified and has no trial, billing or uninstall. Here your agent connects once, then adds real tools through a standard protocol, each with clear terms, limits and a Remove button.</p></details>
+  <details><summary>Can my agent spend my money?</summary><p>Not without you. Trials have a $0 spend limit. Subscriptions are paid on a checkout page you open. Pay-per-call (x402) only works within spending limits you set.</p></details>
+  <details><summary>Can I stop my agent from adding tools on its own?</summary><p>Yes. Untick “Let my agent start free trials” when you connect, or later in My tools. Your agent then sends you a link to approve each tool.</p></details>
+  <details><summary>Which agent apps work?</summary><p>Claude (web, desktop, mobile), Claude Code, Cursor, VS Code, Goose, LM Studio, ChatGPT developer mode, and any app that supports remote MCP servers with OAuth.</p></details>
+  <details><summary>How do I list my tool?</summary><p>Run your own hub with <code>npx github:larvuz2/agent-handshake init</code>, or ask to be listed on a public hub. Your MCP server stays the same.</p></details>
+  <details><summary>What does it cost?</summary><p>The software is free and open source (MIT). Tool makers set their own prices; payment providers charge their usual fees.</p></details>
 </div></section>
 
 <!-- FINAL CTA -->
-<section class="lp-final"><div class="ah-wrap">
-  <h2>Give your tool a handshake.</h2>
-  <p>One button. Three lines. A free trial your users actually start.</p>
-  <div class="lp-cmd lp-cmd--dark"><code>npx github:larvuz2/agent-handshake demo</code><button type="button" class="lp-copy" data-copy="npx github:larvuz2/agent-handshake demo">Copy</button></div>
-  <div class="lp-cta-row" style="justify-content:center">
-    <a class="ah-btn ah-btn--xl lp-white" href="https://github.com/larvuz2/agent-handshake">Get it on GitHub</a>
+<section class="lp-final" id="start"><div class="ah-wrap">
+  <h2>Give your agent every tool. Keep the control.</h2>
+  <p>Connect once. Your agent does the rest.</p>
+  <div class="lp-cta-row" style="justify-content:center;margin-top:22px">
+    <a class="ah-btn ah-btn--xl lp-white" data-hub="/connect" href="https://github.com/larvuz2/agent-handshake#try-it-in-60-seconds">Connect your agent</a>
   </div>
+  <p class="lp-small">No hub yet? Run one in 60 seconds:</p>
+  <div class="lp-cmd lp-cmd--dark"><code>npx github:larvuz2/agent-handshake demo</code><button type="button" class="lp-copy" data-copy="npx github:larvuz2/agent-handshake demo">Copy</button></div>
 </div></section>
 
 </main>
 
 <footer class="ah-footer"><div class="ah-wrap">
-  <span>Agent Handshake · MIT license · Lumen Video is a fictional demo product</span>
+  <span>Agent Handshake · open source, MIT · demo tools are fictional</span>
   <span class="ah-spacer"></span>
   <a href="https://github.com/larvuz2/agent-handshake">GitHub</a>
-  <a href="https://github.com/larvuz2/agent-handshake/blob/main/spec/SPEC.md">Spec</a>
+  <a href="https://github.com/larvuz2/agent-handshake/blob/main/spec/SPEC.md">Protocol</a>
+  <a href="https://github.com/larvuz2/agent-handshake/blob/main/docs/PITCH.md">Pitch</a>
   <a href="https://github.com/larvuz2/agent-handshake/blob/main/docs/security.md">Security</a>
-  <a href="https://github.com/larvuz2/agent-handshake/blob/main/brand/BRAND.md">Brand</a>
 </div></footer>
 
 <script src="/assets/landing.js" defer></script>
