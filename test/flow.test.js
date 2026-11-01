@@ -87,7 +87,7 @@ describe('trial flow (JSON upstream)', () => {
   test('consent screen shows the three lines and the app', () => {
     assert.match(c.html, /Test Agent wants to add Lumen Video/);
     assert.match(c.html, /Start free trial/);
-    assert.match(c.html, /Create and read your video projects, Render 480p previews/);
+    assert.match(c.html, /Create and read your video projects · Render 480p previews/);
     assert.match(c.html, /Free for 7 days · up to 100 calls/);
     assert.equal(c.iss, s.base);
   });
@@ -149,19 +149,23 @@ describe('trial flow (JSON upstream)', () => {
     const status = await rpc(c.mcpUrl, c.tokens.access_token, 'tools/call', { name: 'handshake_status', arguments: {} }, { sessionId: sid });
     const link = /Upgrade to Pro \(\$9\/mo\): (\S+)/.exec(textOf(status.body.result))[1];
     const fresh = new Browser();
-    const r1 = await fresh.get(link);
-    assert.equal(r1.status, 302);
-    const page = await fresh.get(new URL(r1.headers.get('location'), s.base).toString());
+    const page = await fresh.get(link);
+    assert.equal(page.status, 200);
+    assert.equal(fresh.cookies.size, 0, 'an upgrade link must not sign the browser in');
     const html = await page.text();
     assert.match(html, /Continue to payment/);
     const fields = formFields(html);
+    assert.ok(fields.t, 'the scoped token rides along in the form');
     const r2 = await fresh.post(new URL(link).origin + new URL(link).pathname, { ...fields, plan: 'pro' });
     assert.equal(r2.status, 303);
     const checkout = await fresh.get(new URL(r2.headers.get('location'), s.base).toString());
     const chtml = await checkout.text();
     assert.match(chtml, /Pay \$9\/mo \(simulated\)/);
     const done = await fresh.post(`${s.base}/checkout/test`, formFields(chtml));
-    assert.equal(done.headers.get('location'), '/my?upgraded=lumen-video');
+    assert.equal(done.headers.get('location'), '/checkout/done?service=lumen-video&plan=pro');
+    // The scoped link can't open My tools.
+    const my = await (await fresh.get(`${s.base}/my`)).text();
+    assert.match(my, /No tools yet/);
 
     const e = s.gw.store.all('entitlements')[0];
     assert.equal(e.planId, 'pro');
@@ -208,12 +212,14 @@ describe('trial flow (JSON upstream)', () => {
     assert.match(my, /Removed/);
   });
 
-  test('adding it again resumes the same plan, no second trial', async () => {
+  test('adding it again does not bring back a removed paid plan, or a new trial', async () => {
     const again = await connect(s.base, 'lumen-video', { browser: c.browser });
-    assert.match(again.html, /Connect again/);
+    assert.match(again.html, /Your Pro plan ended/);
     const ents = s.gw.store.all('entitlements');
     assert.equal(ents.length, 1);
-    assert.equal(ents[0].status, 'active');
+    assert.equal(ents[0].status, 'expired');
+    const r = await rpc(again.mcpUrl, again.tokens.access_token, 'tools/call', { name: 'list_projects', arguments: {} });
+    assert.equal(r.body.result.isError, true);
   });
 });
 
@@ -238,7 +244,7 @@ describe('limits', () => {
     const r = await rpc(c.mcpUrl, t, 'tools/call', { name: 'list_projects', arguments: {} });
     assert.equal(r.body.result.isError, true);
     assert.match(textOf(r.body.result), /All 2 calls in the Free trial plan/);
-    assert.match(textOf(r.body.result), /Switch to Free \(free\)/);
+    assert.match(textOf(r.body.result), /Switch to the Free plan \(no charge\)/);
     // handshake_status still works and doesn't count
     const st = await rpc(c.mcpUrl, t, 'tools/call', { name: 'handshake_status', arguments: {} });
     assert.match(textOf(st.body.result), /2 of 2 calls used/);

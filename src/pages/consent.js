@@ -50,7 +50,7 @@ export function consentPage({ config, service, client, params, requestToken, csr
     <h1 style="font-size:1.45rem">${appName} wants to add ${service.title} to your agent</h1>
     <div class="ah-ident" style="margin-top:14px">${serviceIcon(service, true)}<div><b>${service.title}</b><br>${verifiedPublisher(service, config)}</div></div>
     ${error ? html`<div class="ah-note ah-note--bad" style="margin-top:16px">${error}</div>` : ''}
-    ${returning === 'expired' ? html`<div class="ah-note ah-note--warn" style="margin-top:16px">Your free trial ended${existing.expiresAt ? html` on ${fmtDate(existing.expiresAt)}` : ''}. You can still connect, then pick a plan in My tools.</div>` : ''}
+    ${returning === 'expired' ? html`<div class="ah-note ah-note--warn" style="margin-top:16px">${plan.durationDays ? 'Your free trial' : `Your ${plan.title} plan`} ended${existing.expiresAt ? html` on ${fmtDate(existing.expiresAt)}` : ''}. You can still connect; your agent will get a link to pick a plan.</div>` : ''}
     ${termsList(sum)}
     <form method="post" action="/oauth/authorize">
       <input type="hidden" name="request" value="${requestToken}">
@@ -61,7 +61,7 @@ export function consentPage({ config, service, client, params, requestToken, csr
       </div>
     </form>
     <p class="ah-small ah-muted" style="margin:16px 0 0">
-      Requested by <b>${redirect.host}</b>${onlyLoopback ? '. Only continue if you just started this from an app on this computer' : ''}.
+      Requested by <b>${redirect.host}</b>.${onlyLoopback ? ' Only continue if you started this yourself.' : ''}
       Remove it anytime in <a href="/my" target="_blank">My tools</a>.
     </p>
   </div>

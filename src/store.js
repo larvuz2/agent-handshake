@@ -100,10 +100,15 @@ export class Store {
     renameSync(tmp, this.file);
   }
 
-  // Drop expired codes and tokens.
+  // Drop expired codes and tokens, and registered clients that never connected.
   gc(now = Date.now()) {
     for (const [id, c] of Object.entries(this.data.codes)) if (c.expiresAt < now) delete this.data.codes[id];
     for (const [id, t] of Object.entries(this.data.tokens)) if (t.expiresAt < now) delete this.data.tokens[id];
+    const used = new Set(Object.values(this.data.grants).map((g) => g.clientId));
+    const weekAgo = now - 7 * 86400000;
+    for (const [id, c] of Object.entries(this.data.clients)) {
+      if (!used.has(id) && c.createdAt < weekAgo) delete this.data.clients[id];
+    }
     this.save();
   }
 }

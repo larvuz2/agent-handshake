@@ -4,9 +4,9 @@ import { icon } from './layout.js';
 // The three consent lines: what it can access, for how long, spend limit.
 export function termsList(summary, { accessTitle = 'Can access' } = {}) {
   return html`<ul class="ah-terms">
-    <li><span class="ah-ti ah-ti--access">${icon('key', 17)}</span><div><b>${summary.access.join(', ')}</b><span>${accessTitle}</span></div></li>
+    <li><span class="ah-ti ah-ti--access">${icon('key', 17)}</span><div><b>${summary.access.join(' · ')}</b><span>${accessTitle}</span></div></li>
     <li><span class="ah-ti ah-ti--time">${icon('clock', 17)}</span><div><b>${summary.duration}</b><span>Plan: ${summary.plan.title}</span></div></li>
-    <li><span class="ah-ti ah-ti--spend">${icon('wallet', 17)}</span><div><b>${summary.spend}</b><span>${summary.plan.price === 0 && !summary.plan.x402 ? 'Nothing is charged during the trial' : 'You stay in control of payments'}</span></div></li>
+    <li><span class="ah-ti ah-ti--spend">${icon('wallet', 17)}</span><div><b>${summary.spend}</b><span>${summary.plan.price === 0 && !summary.plan.x402 ? (summary.plan.durationDays ? 'Nothing is charged during the trial' : 'This plan is free') : 'You stay in control of payments'}</span></div></li>
   </ul>`;
 }
 

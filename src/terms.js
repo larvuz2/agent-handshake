@@ -6,6 +6,9 @@ export const TERMS_SPEC_VERSION = '0.1';
 
 const INTERVALS = new Set(['day', 'week', 'month', 'year']);
 const PERIODS = new Set(['total', 'day', 'month']);
+// x402 networks with a built-in USDC address (see src/billing/x402.js).
+export const KNOWN_X402_NETWORKS = new Set(['eip155:84532', 'eip155:8453']);
+export const TESTNET_X402_NETWORKS = new Set(['eip155:84532']);
 
 export class ConfigError extends Error {
   constructor(problems) {
@@ -35,6 +38,10 @@ export function normalizeService(raw, index = 0) {
   const scopes = {};
   for (const [name, s] of Object.entries(raw.scopes || {})) {
     if (!/^[A-Za-z0-9_.:-]+$/.test(name)) p.push(`${where}.scopes: invalid scope name "${name}"`);
+    if (typeof s === 'string') {
+      scopes[name] = { description: s, tools: [] };
+      continue;
+    }
     const tools = Array.isArray(s?.tools) ? s.tools.map(String) : [];
     scopes[name] = { description: s?.description || name, tools };
   }
@@ -53,6 +60,8 @@ export function normalizeService(raw, index = 0) {
 
     let price = pl.price ?? 0;
     if (typeof price === 'number') {
+      if (price < 0) p.push(`${pw}.price must not be negative`);
+      // A plain number means USD per month.
       if (price !== 0) price = { amount: price, currency: 'USD', interval: 'month' };
     } else if (price && typeof price === 'object') {
       if (typeof price.amount !== 'number' || price.amount < 0) p.push(`${pw}.price.amount must be a number`);
@@ -80,12 +89,17 @@ export function normalizeService(raw, index = 0) {
     let x402 = null;
     if (pl.x402) {
       const x = pl.x402;
-      if (!x.pricePerCall || Number.isNaN(Number(x.pricePerCall))) p.push(`${pw}.x402.pricePerCall must be a USD amount like "0.01"`);
+      const amount = Number(x.pricePerCall);
+      if (!(amount > 0) || amount < 0.000001) p.push(`${pw}.x402.pricePerCall must be a USD amount of at least 0.000001, like "0.01"`);
       if (!x.payTo) p.push(`${pw}.x402.payTo must be the wallet address that receives payments`);
+      const network = x.network || 'eip155:84532';
+      if (!KNOWN_X402_NETWORKS.has(network) && !x.assetAddress) {
+        p.push(`${pw}.x402.assetAddress is required for network ${network} (USDC addresses are built in only for Base and Base Sepolia)`);
+      }
       x402 = {
-        pricePerCall: String(x.pricePerCall),
+        pricePerCall: typeof x.pricePerCall === 'number' ? trimZeros(x.pricePerCall.toFixed(6)) : String(x.pricePerCall),
         asset: x.asset || 'USDC',
-        network: x.network || 'eip155:84532',
+        network,
         payTo: x.payTo,
         assetAddress: x.assetAddress,
         assetDecimals: x.assetDecimals ?? 6,

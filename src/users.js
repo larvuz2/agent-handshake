@@ -3,7 +3,7 @@
 // link (signed) that logs the person into My Tools on any browser.
 
 import { cookie, parseCookies } from './util/http.js';
-import { hmac, randomId, safeEqual, sign, verify } from './util/crypto.js';
+import { hmac, randomId, safeEqual, sha256, sign, verify } from './util/crypto.js';
 
 const COOKIE = 'ah_uid';
 const ADMIN_COOKIE = 'ah_admin';
@@ -52,6 +52,7 @@ export class Users {
     return this.store.get('users', uid) || this.store.put('users', uid, { id: uid, createdAt: Date.now(), spendPolicy: defaultSpendPolicy() });
   }
 
+  // Full sign-in to My tools. Only ever used behind a confirmation page.
   loginToken(uid, ttlSeconds = 3600) {
     return sign(this.config.secret, { k: 'login', uid }, ttlSeconds);
   }
@@ -61,14 +62,31 @@ export class Users {
     return body?.k === 'login' ? body.uid : null;
   }
 
+  // A link that opens one tool's upgrade page, and nothing else. This is what the
+  // agent hands out, so holding a tool token never means holding the whole account.
+  entitlementToken(uid, entitlementId, ttlSeconds = 24 * 3600) {
+    return sign(this.config.secret, { k: 'ent', uid, e: entitlementId }, ttlSeconds);
+  }
+
+  readEntitlementToken(token, entitlementId) {
+    const body = verify(this.config.secret, token);
+    return body?.k === 'ent' && body.e === entitlementId ? body.uid : null;
+  }
+
   // ---- publisher admin session ----
+  // The cookie is tied to the current admin key, so rotating the key signs everyone out.
+  adminKeyTag() {
+    return sha256(`admin:${this.config.adminKey}`).slice(0, 16);
+  }
+
   isAdmin(req) {
     const v = parseCookies(req)[ADMIN_COOKIE];
-    return Boolean(v && verify(this.config.secret, v)?.k === 'admin');
+    const body = v && verify(this.config.secret, v);
+    return Boolean(body?.k === 'admin' && body.kt === this.adminKeyTag());
   }
 
   adminCookie() {
-    return cookie(ADMIN_COOKIE, sign(this.config.secret, { k: 'admin' }, 12 * 3600), { maxAge: 12 * 3600, secure: this.secure });
+    return cookie(ADMIN_COOKIE, sign(this.config.secret, { k: 'admin', kt: this.adminKeyTag() }, 12 * 3600), { maxAge: 12 * 3600, secure: this.secure });
   }
 
   csrf(uid, purpose = '') {

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/larvuz2/agent-handshake/main/spec/config.schema.json",
+  "name": "Pay-per-call example (Base Sepolia testnet)",
+  "services": [
+    {
+      "id": "quick-notes",
+      "name": "dev.quicknotes/mcp",
+      "title": "Quick Notes",
+      "description": "Short notes your agent can save, list and search.",
+      "publisher": { "name": "Quick Notes", "domain": "quicknotes.example" },
+      "upstream": { "url": "http://127.0.0.1:7411/notes/mcp" },
+      "plans": [
+        { "id": "trial", "price": 0, "durationDays": 3, "limits": { "calls": 30 } },
+        {
+          "id": "payg",
+          "title": "Pay per call",
+          "x402": { "pricePerCall": "0.001", "network": "eip155:84532", "payTo": "${env:X402_PAY_TO}" },
+          "limits": { "spendUsd": 5, "period": "month" }
+        }
+      ]
+    }
+  ]
+}

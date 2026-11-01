@@ -34,10 +34,20 @@ export function serviceIcon(service, small = false) {
   return html`<span class="${cls}" aria-hidden="true">${letter}</span>`;
 }
 
-export function verifiedPublisher(service, config) {
+// The publisher domain in the config is a claim. We only show the shield when the
+// gateway itself is served from that domain, which the browser has verified (TLS).
+export function publisherVerified(service, config) {
   const domain = service.publisher.domain;
-  const gatewayHost = new URL(config.publicUrl).hostname;
-  return html`<span class="ah-verified">${icon('shield', 15)} ${domain ? html`by <b>${domain}</b> · served from ${gatewayHost}` : html`served from <b>${gatewayHost}</b>`}</span>`;
+  const host = new URL(config.publicUrl).hostname;
+  return Boolean(domain && config.publicUrl.startsWith('https://') && (host === domain || host.endsWith(`.${domain}`)));
+}
+
+export function verifiedPublisher(service, config) {
+  const host = new URL(config.publicUrl).hostname;
+  if (publisherVerified(service, config)) {
+    return html`<span class="ah-verified">${icon('shield', 15)} <b>${service.publisher.domain}</b> · verified, served from its own domain</span>`;
+  }
+  return html`<span class="ah-verified">${service.publisher.name}${service.publisher.domain && service.publisher.name !== service.publisher.domain ? ` (${service.publisher.domain})` : ''} · served by ${host}</span>`;
 }
 
 export function behind(text) {

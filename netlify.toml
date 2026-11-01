@@ -1,0 +1,29 @@
+# Netlify: connect the repo and it builds the landing page from site/.
+[build]
+  command = "node scripts/build-site.js"
+  publish = "site/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[redirects]]
+  from = "/github"
+  to = "https://github.com/larvuz2/agent-handshake"
+  status = 302
+
+[[redirects]]
+  from = "/docs"
+  to = "https://github.com/larvuz2/agent-handshake#docs"
+  status = 302

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://raw.githubusercontent.com/larvuz2/agent-handshake/main/spec/config.schema.json",
+  "name": "Lumen Labs",
+  "publicUrl": "https://agents.lumenvideo.com",
+  "services": [
+    {
+      "id": "lumen-video",
+      "name": "com.lumenvideo/mcp",
+      "title": "Lumen Video",
+      "description": "Turn a prompt into a short video: storyboards, previews and 4K renders.",
+      "version": "1.4.0",
+      "publisher": { "name": "Lumen Labs", "domain": "lumenvideo.com", "url": "https://lumenvideo.com" },
+      "upstream": {
+        "url": "https://internal.lumenvideo.com/mcp",
+        "headers": { "Authorization": "Bearer ${env:LUMEN_API_KEY}" }
+      },
+      "scopes": {
+        "projects": { "description": "Create and read your video projects", "tools": ["list_projects", "create_project"] },
+        "render:preview": { "description": "Render 480p previews", "tools": ["render_preview"] },
+        "render:full": { "description": "Render full-quality 4K videos", "tools": ["render_full"] }
+      },
+      "plans": [
+        { "id": "trial", "title": "Free trial", "price": 0, "durationDays": 7, "limits": { "calls": 100 }, "scopes": ["projects", "render:preview"] },
+        { "id": "pro", "title": "Pro", "price": { "amount": 9, "currency": "USD", "interval": "month" }, "scopes": ["projects", "render:preview", "render:full"] },
+        { "id": "free", "title": "Free", "price": 0, "limits": { "calls": 20, "period": "month" }, "scopes": ["projects"] }
+      ]
+    }
+  ]
+}

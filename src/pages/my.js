@@ -26,7 +26,7 @@ function toolCard({ e, service, store, grants, csrf }) {
     <div style="min-width:0">
       <div class="ah-row" style="gap:8px"><h3 style="margin:0">${service.title}</h3>${planPill(plan?.title || e.planId)}${e.status !== 'expired' ? pill(lab.text, lab.tone) : ''}${status || ''}</div>
       <div class="ah-tool-meta">
-        <span>${calls !== undefined ? `${e.period.calls} of ${calls} calls` : `${e.totals.calls} calls`}</span>
+        <span>${calls !== undefined ? `${e.period.calls} of ${calls} calls${e.limits.period === 'day' ? ' today' : e.limits.period === 'month' ? ' this month' : ''}` : `${e.totals.calls} calls`}</span>
         <span>${w7.calls} in the last 7 days${w7.successRate !== null ? `, ${Math.round(w7.successRate * 100)}% ok` : ''}</span>
         ${e.totals.spendUsd > 0 ? html`<span>Spent ${formatMoney(e.totals.spendUsd)}</span>` : ''}
         ${e.lastUsedAt ? html`<span>Last used ${timeAgo(e.lastUsedAt)}</span>` : ''}
@@ -42,7 +42,7 @@ function toolCard({ e, service, store, grants, csrf }) {
     <div class="ah-tool-actions">
       ${ups.slice(0, 2).map((p) => html`<a class="ah-btn ah-btn--sm" href="/upgrade/${e.id}?plan=${p.id}">${p.x402 ? 'Pay per call' : `Upgrade ${priceLabel(p)}`}</a>`)}
       ${free && free.id !== e.planId ? html`<form method="post" action="/my/${e.id}/keep-free">${csrfField(csrf)}<button class="ah-btn ah-btn--sm ah-btn--ghost">Keep free</button></form>` : ''}
-      <form method="post" action="/my/${e.id}/remove" data-msg="Remove ${service.title}? Your agent loses access right away." onsubmit="return confirm(this.dataset.msg)">${csrfField(csrf)}<button class="ah-btn ah-btn--sm ${lab.suggestion === 'remove' || e.status === 'expired' ? '' : 'ah-btn--danger'}" ${lab.suggestion === 'remove' || e.status === 'expired' ? 'style="background:var(--ah-coral)"' : ''}>Remove</button></form>
+      <form method="post" action="/my/${e.id}/remove" data-msg="Remove ${service.title}? Your agent loses access right away." onsubmit="return confirm(this.dataset.msg)">${csrfField(csrf)}<button class="ah-btn ah-btn--sm ${lab.suggestion === 'remove' || e.status === 'expired' ? 'ah-btn--coral' : 'ah-btn--danger'}">Remove</button></form>
     </div>
   </article>`;
 }

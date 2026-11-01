@@ -1,0 +1,10 @@
+node_modules
+.git
+.github
+.handshake
+.handshake-demo
+test
+site
+docs
+*.md
+!README.md

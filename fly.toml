@@ -1,0 +1,29 @@
+# fly launch --copy-config --no-deploy
+# fly volumes create handshake_data --size 1
+# fly secrets set HANDSHAKE_CONFIG_JSON="$(cat handshake.config.json)"   # leave out to run the demo
+# fly deploy
+app = "agent-handshake"
+primary_region = "iad"
+
+[build]
+
+[env]
+  PORT = "7410"
+  DATA_DIR = "/data"
+
+[mounts]
+  source = "handshake_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 7410
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  method = "GET"
+  path = "/healthz"
+  interval = "30s"
+  timeout = "5s"

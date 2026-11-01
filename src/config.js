@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { randomToken } from './util/crypto.js';
-import { ConfigError, normalizeService } from './terms.js';
+import { ConfigError, TESTNET_X402_NETWORKS, normalizeService } from './terms.js';
 
 const ENV_RE = /\$\{env:([A-Z0-9_]+)\}/g;
 
@@ -20,6 +20,15 @@ function substituteEnv(value, missing) {
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, substituteEnv(v, missing)]));
   }
   return value;
+}
+
+// Hosting platforms that tell an app its own public address.
+function platformUrl() {
+  const e = process.env;
+  if (e.RENDER_EXTERNAL_URL) return e.RENDER_EXTERNAL_URL;
+  if (e.RAILWAY_PUBLIC_DOMAIN) return `https://${e.RAILWAY_PUBLIC_DOMAIN}`;
+  if (e.FLY_APP_NAME) return `https://${e.FLY_APP_NAME}.fly.dev`;
+  return null;
 }
 
 export function readConfigFile(file) {
@@ -47,7 +56,7 @@ export function buildConfig(raw, { baseDir = process.cwd(), overrides = {} } = {
 
   const port = Number(overrides.port ?? process.env.PORT ?? cfg.port ?? 7410);
   const host = overrides.host ?? process.env.HOST ?? cfg.host ?? '0.0.0.0';
-  let publicUrl = overrides.publicUrl ?? process.env.PUBLIC_URL ?? cfg.publicUrl ?? `http://localhost:${port}`;
+  let publicUrl = overrides.publicUrl ?? process.env.PUBLIC_URL ?? cfg.publicUrl ?? platformUrl() ?? `http://localhost:${port}`;
   publicUrl = publicUrl.replace(/\/+$/, '');
   if (!/^https?:\/\//.test(publicUrl)) throw new ConfigError([`publicUrl must start with http:// or https:// (got ${publicUrl})`]);
 
@@ -77,9 +86,26 @@ export function buildConfig(raw, { baseDir = process.cwd(), overrides = {} } = {
   const mode = overrides.paymentsMode ?? process.env.PAYMENTS_MODE ?? cfg.payments?.mode ?? (stripeKey ? 'stripe' : 'test');
   if (!['test', 'stripe', 'external'].includes(mode)) problems.push(`payments.mode must be test, stripe or external (got ${mode})`);
   if (mode === 'stripe' && !stripeKey) problems.push('payments.mode is "stripe" but STRIPE_SECRET_KEY is not set');
+  if (mode === 'external') {
+    for (const s of services) {
+      for (const pl of s.plans) {
+        if (pl.price !== 0 && !pl.x402 && !pl.checkoutUrl) problems.push(`payments.mode is "external", so plan "${pl.id}" of ${s.id} needs a checkoutUrl`);
+      }
+    }
+  }
   if (problems.length) throw new ConfigError(problems);
 
   const local = /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(publicUrl);
+  const warnings = [];
+  if (!local && mode === 'test') warnings.push('Payments are in test mode on a public gateway: upgrades are simulated. Set STRIPE_SECRET_KEY or payments.mode.');
+  if (!local && !publicUrl.startsWith('https://')) warnings.push('PUBLIC_URL is not HTTPS. claude.ai, ChatGPT and most OAuth clients need HTTPS.');
+  for (const s of services) {
+    for (const pl of s.plans) {
+      if (pl.x402 && TESTNET_X402_NETWORKS.has(pl.x402.network) && !local) {
+        warnings.push(`Plan "${pl.id}" of ${s.id} takes x402 payments on a testnet (${pl.x402.network}). Use eip155:8453 for real money.`);
+      }
+    }
+  }
   return {
     built: true,
     name: cfg.name || 'Agent Handshake',
@@ -107,6 +133,7 @@ export function buildConfig(raw, { baseDir = process.cwd(), overrides = {} } = {
     secret: overrides.secret ?? process.env.HANDSHAKE_SECRET,
     adminKey: overrides.adminKey ?? process.env.HANDSHAKE_ADMIN_KEY,
     quiet: overrides.quiet ?? false,
+    warnings,
   };
 }
 

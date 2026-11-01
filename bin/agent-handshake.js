@@ -46,6 +46,7 @@ ${c.b('Usage')}
   agent-handshake validate             Check the config and that your MCP server answers
   agent-handshake links <service-id>   Print install links, the button, and badge code
   agent-handshake card <service-id>    Print the MCP server card
+  agent-handshake auto                 Start with your config if there is one, else the demo (for containers)
 
 ${c.b('Options')}
   -c, --config <file>    Config file (default: handshake.config.json)
@@ -54,7 +55,8 @@ ${c.b('Options')}
   --data-dir <dir>       Where data is stored (default: .handshake, or DATA_DIR)
 
 ${c.b('Environment')}
-  PUBLIC_URL, PORT, DATA_DIR, HANDSHAKE_SECRET, HANDSHAKE_ADMIN_KEY,
+  PUBLIC_URL, PORT, DATA_DIR, HANDSHAKE_CONFIG, HANDSHAKE_CONFIG_JSON,
+  HANDSHAKE_SECRET, HANDSHAKE_ADMIN_KEY, PAYMENTS_MODE,
   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, X402_FACILITATOR_URL
 
 Docs: https://github.com/larvuz2/agent-handshake
@@ -69,9 +71,20 @@ function fail(err) {
   process.exit(1);
 }
 
+// Config comes from --config, HANDSHAKE_CONFIG (a path), HANDSHAKE_CONFIG_JSON
+// (the whole JSON, handy on hosting platforms), or ./handshake.config.json.
 function loadConfig(args) {
-  const file = args.config || 'handshake.config.json';
-  const { raw, dir } = readConfigFile(file);
+  let raw;
+  let dir = process.cwd();
+  if (!args.config && process.env.HANDSHAKE_CONFIG_JSON) {
+    try {
+      raw = JSON.parse(process.env.HANDSHAKE_CONFIG_JSON);
+    } catch (err) {
+      throw new ConfigError([`HANDSHAKE_CONFIG_JSON is not valid JSON: ${err.message}`]);
+    }
+  } else {
+    ({ raw, dir } = readConfigFile(args.config || process.env.HANDSHAKE_CONFIG || 'handshake.config.json'));
+  }
   return buildConfig(raw, { baseDir: dir, overrides: { port: args.port, publicUrl: args.publicUrl, dataDir: args.dataDir } });
 }
 
@@ -98,6 +111,8 @@ function banner(gw, { adminKeyShown, extra = [] } = {}) {
     lines.push(c.dim('  For claude.ai or ChatGPT, give the gateway a public HTTPS URL (see docs/deploy.md).'));
     lines.push('');
   }
+  for (const w of config.warnings || []) lines.push(`  ${c.yellow('!')} ${w}`);
+  if (config.warnings?.length) lines.push('');
   lines.push(...extra);
   console.log(lines.join('\n'));
 }
@@ -136,7 +151,7 @@ async function cmdDemo(args) {
   const gw = createGateway(config);
   await gw.listen(config.port, config.host);
   banner(gw, {
-    adminKeyShown: true,
+    adminKeyShown: !process.env.HANDSHAKE_ADMIN_KEY,
     extra: [
       c.dim(`  Demo tools run on 127.0.0.1:${upstreamPort} behind the gateway. Data: ${config.dataDir}`),
       `  ${c.green('Start here:')} open ${c.b(`${config.publicUrl}/add/lumen-video`)}`,
@@ -147,6 +162,14 @@ async function cmdDemo(args) {
     await gw.close();
     upstream.close();
   });
+}
+
+// For containers: run your config if there is one, otherwise the demo.
+async function cmdAuto(args) {
+  const hasConfig = args.config || process.env.HANDSHAKE_CONFIG_JSON || existsSync(resolve(process.env.HANDSHAKE_CONFIG || 'handshake.config.json'));
+  if (hasConfig) return cmdStart(args);
+  console.log(c.yellow('  No config found (HANDSHAKE_CONFIG_JSON or handshake.config.json), so starting the demo.'));
+  return cmdDemo(args);
 }
 
 async function cmdValidate(args) {
@@ -254,8 +277,8 @@ async function cmdInit(args) {
   console.log(`\n${c.green('✓')} Wrote ${file}`);
   console.log('\nNext:');
   if (authHeader) console.log(`  export UPSTREAM_TOKEN=...      ${c.dim(`# the value of the ${authHeader} header`)}`);
-  console.log('  npx agent-handshake validate   # checks your MCP server answers');
-  console.log('  npx agent-handshake start      # starts the gateway on http://localhost:7410');
+  console.log('  npx github:larvuz2/agent-handshake validate   # checks your MCP server answers');
+  console.log('  npx github:larvuz2/agent-handshake start      # starts the gateway on http://localhost:7410');
   console.log(c.dim('\n  Tip: give tools a scope to lock them to paid plans. See docs/publishers.md.'));
 }
 
@@ -264,7 +287,7 @@ async function main() {
   if (args.version) return console.log(pkg.version);
   const cmd = args._[0];
   if (!cmd || args.help || cmd === 'help') return console.log(HELP);
-  const commands = { start: cmdStart, demo: cmdDemo, init: cmdInit, validate: cmdValidate, links: cmdLinks, card: cmdCard };
+  const commands = { start: cmdStart, demo: cmdDemo, auto: cmdAuto, init: cmdInit, validate: cmdValidate, links: cmdLinks, card: cmdCard };
   if (!commands[cmd]) {
     console.error(`Unknown command "${cmd}".\n${HELP}`);
     process.exit(1);

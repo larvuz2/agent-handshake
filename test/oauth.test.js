@@ -40,8 +40,8 @@ describe('oauth', () => {
     assert.equal(r.iss, s.base);
   });
 
-  test('missing resource works when the request is unambiguous? no: two tools, so it is rejected', async () => {
-    await assert.rejects(connect(s.base, 'quick-notes', { sendResource: false }), /no redirect after consent|authorize page/);
+  test('a missing resource is rejected when the gateway serves two tools', async () => {
+    await assert.rejects(connect(s.base, 'quick-notes', { sendResource: false }), /authorize page 400/);
   });
 
   test('unknown redirect_uri shows an error page instead of redirecting', async () => {
@@ -59,7 +59,7 @@ describe('oauth', () => {
     assert.match(await r.text(), /redirect_uri does not match/);
   });
 
-  test('missing PKCE goes back to the app as invalid_request', async () => {
+  test('an invalid request shows an error page instead of redirecting (no open redirect)', async () => {
     const reg = await (
       await fetch(`${s.base}/oauth/register`, {
         method: 'POST',
@@ -70,10 +70,8 @@ describe('oauth', () => {
     const r = await fetch(`${s.base}/oauth/authorize?response_type=code&client_id=${reg.client_id}&redirect_uri=${encodeURIComponent('https://app.example/cb')}&state=x`, {
       redirect: 'manual',
     });
-    assert.equal(r.status, 302);
-    const loc = new URL(r.headers.get('location'));
-    assert.equal(loc.searchParams.get('error'), 'invalid_request');
-    assert.equal(loc.searchParams.get('state'), 'x');
+    assert.equal(r.status, 400);
+    assert.match(await r.text(), /PKCE code_challenge is required/);
   });
 
   test('wrong PKCE verifier is rejected, and a code works only once', async () => {

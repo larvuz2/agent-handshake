@@ -22,6 +22,11 @@ const META_VERSION = 'io.modelcontextprotocol/protocolVersion';
 const META_CAPS = 'io.modelcontextprotocol/clientCapabilities';
 const META_CLIENT = 'io.modelcontextprotocol/clientInfo';
 const URL_ELICITATION_REQUIRED = -32042; // 2025-11-25 only
+// Methods that still work after a plan ends: lifecycle, discovery and listings.
+const OPEN_METHODS = new Set([
+  'initialize', 'ping', 'server/discover', 'tools/list', 'resources/list', 'resources/templates/list',
+  'prompts/list', 'logging/setLevel', 'subscriptions/listen',
+]);
 const STATE_PREFIX = 'ahs.';
 
 export class McpProxy {
@@ -60,6 +65,25 @@ export class McpProxy {
     for (const m of msgs) this.rememberClient(ctx.grant, m);
     const calls = msgs.filter((m) => m.method === 'tools/call');
 
+    // Requests are matched to responses by id, so ids must be plain and unique.
+    const requests = msgs.filter((m) => m.method && m.id !== undefined);
+    const badId = requests.find((m) => !(typeof m.id === 'string' || Number.isInteger(m.id)));
+    const ids = requests.map((m) => `${typeof m.id}:${m.id}`);
+    if (badId || new Set(ids).size !== ids.length) {
+      return sendJson(res, 400, rpcError(null, -32600, badId ? 'Request ids must be strings or integers' : 'Request ids in a batch must be unique'), CORS_HEADERS);
+    }
+
+    // A plan that ended (or was removed) only keeps the basics: discovery, listing,
+    // and tools/call, which explains how to upgrade.
+    if (ctx.entitlement.status === 'expired' || ctx.entitlement.status === 'dropped') {
+      const blocked = requests.filter((m) => m.method !== 'tools/call' && !OPEN_METHODS.has(m.method));
+      if (blocked.length) {
+        const text = blockedMessage(ctx.entitlement.status, ctx);
+        const out = blocked.map((m) => rpcError(m.id, -32001, text.split('\n')[0], { manage: ctx.links.manage() }));
+        return sendJson(res, 200, Array.isArray(body) ? out : out[0], CORS_HEADERS);
+      }
+    }
+
     if (calls.length === 0) {
       const lists = msgs.filter((m) => m.method === 'tools/list').map((m) => m.id);
       return this.forward(req, res, ctx, raw, lists.length ? { listIds: new Set(lists) } : null);
@@ -80,7 +104,7 @@ export class McpProxy {
         .map((m) => {
           const d = decisions.find((x) => x.id === m.id);
           if (d?.local) return d.local;
-          if (d) this.entitlements.release(ctx.entitlement);
+          if (d) this.entitlements.release(ctx.entitlement, d.costUsd);
           return rpcError(m.id, -32600, 'Send this request on its own; the gateway could not process it in a batch.');
         });
       return sendJson(res, 200, out, CORS_HEADERS);
@@ -92,15 +116,18 @@ export class McpProxy {
   context(service, auth) {
     const { entitlement, grant } = auth;
     const base = this.config.publicUrl;
-    const login = () => this.users.loginToken(entitlement.userId, 24 * 3600);
+    // Upgrade links only open this one tool's upgrade page. The manage link signs in
+    // to My tools, but only after the person confirms on a page in their browser.
+    const scoped = () => encodeURIComponent(this.users.entitlementToken(entitlement.userId, entitlement.id, 24 * 3600));
+    const login = () => encodeURIComponent(this.users.loginToken(entitlement.userId, 3600));
     return {
       service,
       grant,
       entitlement,
       links: {
-        upgrade: (planId) => `${base}/upgrade/${entitlement.id}?plan=${encodeURIComponent(planId)}&t=${encodeURIComponent(login())}`,
-        upgradeAny: () => `${base}/upgrade/${entitlement.id}?t=${encodeURIComponent(login())}`,
-        manage: () => `${base}/my/login?t=${encodeURIComponent(login())}`,
+        upgrade: (planId) => `${base}/upgrade/${entitlement.id}?plan=${encodeURIComponent(planId)}&t=${scoped()}`,
+        upgradeAny: () => `${base}/upgrade/${entitlement.id}?t=${scoped()}`,
+        manage: () => `${base}/my/login?t=${login()}`,
         install: () => `${base}/add/${service.id}`,
       },
     };
@@ -167,15 +194,20 @@ export class McpProxy {
     const costUsd = paid ? Number(plan.x402.pricePerCall) : 0;
     const check = this.entitlements.check(e, name, { costUsd });
     if (!check.ok) return this.blocked(ctx, msg, check.reason, { tool: name, costUsd, declined });
-
-    let payment = null;
     if (paid) {
       const policy = this.x402.checkPolicy(e, costUsd);
       if (!policy.ok) return this.blocked(ctx, msg, 'policy', { detail: policy.detail });
+    }
+
+    // Hold the call and its price before awaiting anything.
+    this.entitlements.reserve(e, costUsd);
+
+    let payment = null;
+    if (paid) {
       payment = await this.x402.requirePayment(ctx, msg, null, plan);
       if (payment.local) {
-        const r = payment.local.result;
-        return { id: msg.id, local: this.local(msg, r) };
+        this.entitlements.release(e, costUsd);
+        return { id: msg.id, local: this.local(msg, payment.local.result) };
       }
       if (params._meta?.[PAYMENT_META]) {
         const { [PAYMENT_META]: _p, ...meta } = params._meta;
@@ -185,7 +217,6 @@ export class McpProxy {
       }
     }
 
-    this.entitlements.reserve(e);
     return { id: msg.id, tool: name, started: Date.now(), costUsd, payment, body: changed ? { ...msg, params } : null };
   }
 
@@ -237,7 +268,8 @@ export class McpProxy {
       'x-handshake-entitlement': e.id,
       'x-handshake-plan': e.planId,
       'x-handshake-scopes': e.scopes.join(' '),
-      'x-handshake-client': String(grant.clientInfo?.name || grant.clientName || '').slice(0, 100),
+      // Percent-encoded: header values must be plain ASCII.
+      'x-handshake-client': encodeURIComponent(String(grant.clientInfo?.name || grant.clientName || '').slice(0, 100)),
     };
     for (const [k, v] of Object.entries(req.headers)) if (k.startsWith('mcp-') || k === 'last-event-id') h[k] = v;
     return { ...h, ...ctx.service.upstream.headers };
@@ -308,12 +340,32 @@ export class McpProxy {
     const calls = opts?.calls || new Map();
     const listIds = opts?.listIds || new Set();
     const settled = new Set();
-    // Calls that never got a response (upstream error, stream cut) don't count.
+    let clientGone = false;
+    res.on('close', () => {
+      if (!res.writableFinished) clientGone = true;
+    });
+    // Calls the upstream never ran (unreachable, error status) don't count.
     const releaseAll = () => {
-      for (const id of calls.keys()) {
+      for (const [id, d] of calls) {
         if (settled.has(id)) continue;
         settled.add(id);
-        this.entitlements.release(ctx.entitlement);
+        this.entitlements.release(ctx.entitlement, d.costUsd);
+      }
+    };
+    // The stream ended without a result. If the client hung up, the upstream may still
+    // have done the work (and the result may be fetched another way), so the call
+    // counts and a verified payment is settled. If the upstream ended early, it doesn't.
+    const finishUnanswered = async () => {
+      for (const [id, d] of calls) {
+        if (settled.has(id)) continue;
+        settled.add(id);
+        if (!clientGone) {
+          this.entitlements.release(ctx.entitlement, d.costUsd);
+          continue;
+        }
+        let costUsd = 0;
+        if (d.payment) costUsd = (await this.x402.settlePayment(d)).success ? d.costUsd : 0;
+        this.entitlements.record(ctx.entitlement, { tool: d.tool, ok: false, latencyMs: Date.now() - d.started, costUsd, reservedUsd: d.costUsd, client: ctx.grant.clientInfo?.name || ctx.grant.clientName });
       }
     };
     const firstId = calls.size ? [...calls.keys()][0] : null;
@@ -351,7 +403,7 @@ export class McpProxy {
         }
         if (msg.result?.resultType === 'input_required') {
           // The upstream needs more input; this isn't a finished call yet.
-          this.entitlements.release(ctx.entitlement);
+          this.entitlements.release(ctx.entitlement, d.costUsd);
           return out;
         }
         this.entitlements.record(ctx.entitlement, {
@@ -359,6 +411,7 @@ export class McpProxy {
           ok,
           latencyMs: Date.now() - d.started,
           costUsd,
+          reservedUsd: d.costUsd,
           client: ctx.grant.clientInfo?.name || ctx.grant.clientName,
         });
         return out;
@@ -384,24 +437,32 @@ export class McpProxy {
       } catch (err) {
         this.log?.warn?.(`[${ctx.service.id}] stream ended early: ${err.message}`);
       }
-      releaseAll();
+      await finishUnanswered();
       return res.end();
     }
 
     // JSON (single message or batch array)
-    const text = await upstream.text();
+    let text;
+    try {
+      text = await upstream.text();
+    } catch (err) {
+      this.log?.warn?.(`[${ctx.service.id}] response cut: ${err.message}`);
+      await finishUnanswered();
+      return res.end();
+    }
     let parsed;
     try {
       parsed = JSON.parse(text);
     } catch {
       for (const m of parseSseMessages(text)) await onMessage(m);
-      releaseAll();
+      await finishUnanswered();
       res.writeHead(upstream.status, headers);
       return res.end(text);
     }
-    const out = Array.isArray(parsed) ? await Promise.all(parsed.map(onMessage)) : await onMessage(parsed);
-    releaseAll();
-    return sendJson(res, upstream.status, out, headers);
+    const out = [];
+    for (const m of Array.isArray(parsed) ? parsed : [parsed]) out.push(await onMessage(m));
+    await finishUnanswered();
+    return sendJson(res, upstream.status, Array.isArray(parsed) ? out : out[0], headers);
   }
 
   rewriteTools(ctx, result) {

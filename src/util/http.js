@@ -35,8 +35,8 @@ export async function readForm(req) {
   return Object.fromEntries(new URLSearchParams(raw));
 }
 
-export async function readJson(req) {
-  const raw = (await readBody(req)).toString('utf8');
+export async function readJson(req, limit) {
+  const raw = (await readBody(req, limit)).toString('utf8');
   if (!raw) return {};
   try {
     return JSON.parse(raw);
@@ -109,8 +109,20 @@ export const CORS_HEADERS = {
   'access-control-max-age': '86400',
 };
 
+// Who is the client? Proxy headers are trusted only when told to, because anyone
+// can send them. TRUST_PROXY: unset/false = use the socket address; true = the
+// right-most X-Forwarded-For entry (added by your proxy); a header name such as
+// fly-client-ip or cf-connecting-ip = that header. Fly.io is detected.
 export function clientIp(req) {
-  const fwd = req.headers['x-forwarded-for'];
-  if (fwd && process.env.TRUST_PROXY !== 'false') return String(fwd).split(',')[0].trim();
-  return req.socket?.remoteAddress || 'unknown';
+  const socket = req.socket?.remoteAddress || 'unknown';
+  let mode = process.env.TRUST_PROXY;
+  if (mode === undefined && process.env.FLY_APP_NAME) mode = 'fly-client-ip';
+  if (mode === undefined && (process.env.RENDER || process.env.RAILWAY_ENVIRONMENT)) mode = 'true';
+  if (!mode || mode === 'false') return socket;
+  if (mode === 'true') {
+    const fwd = String(req.headers['x-forwarded-for'] || '').split(',').map((s) => s.trim()).filter(Boolean);
+    return fwd.length ? fwd[fwd.length - 1] : socket;
+  }
+  const v = req.headers[mode.toLowerCase()];
+  return v ? String(v).split(',')[0].trim() : socket;
 }
