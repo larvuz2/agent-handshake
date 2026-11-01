@@ -3,7 +3,7 @@ import { formatMoney, freePlan, isFree, planById, priceLabel, scopeDescriptions,
 import { behind, layout, serviceIcon } from './layout.js';
 import { csrfField, planPill } from './components.js';
 
-export function upgradePage({ config, e, service, user, csrf, selected, mode }) {
+export function upgradePage({ config, e, service, user, csrf, token, selected, mode }) {
   const current = planById(service, e.planId);
   const options = [...upgradePlans(service)];
   const free = freePlan(service);
@@ -38,12 +38,12 @@ export function upgradePage({ config, e, service, user, csrf, selected, mode }) 
   const body = html`
     <div class="ah-ident" style="margin-bottom:16px">${serviceIcon(service)}<div><h1 style="font-size:1.6rem">${service.title}</h1><span class="ah-muted">Current plan: ${planPill(current?.title || e.planId)}${e.status === 'expired' ? ' (ended)' : ''}</span></div></div>
     <form method="post" action="/upgrade/${e.id}">
-      ${csrfField(csrf)}
+      ${token ? html`<input type="hidden" name="t" value="${token}">` : csrfField(csrf)}
       <div class="ah-grid">${cards}</div>
     </form>
     <p class="ah-small ah-muted" style="margin-top:16px">${payNote}</p>
     ${behind(html`Upgrades use a page you open in your browser (MCP URL-mode elicitation), so payment details never pass through the agent. Pay-per-call uses <code>x402</code>: your agent signs a stablecoin payment for each call, and the gateway checks your spending limits first.`)}
-    <p style="margin-top:16px"><a href="/my">Back to My tools</a></p>`;
+    ${token ? '' : html`<p style="margin-top:16px"><a href="/my">Back to My tools</a></p>`}`;
   return layout({ config, title: `Upgrade ${service.title}`, body, user });
 }
 
@@ -64,7 +64,7 @@ export function testCheckoutPage({ config, e, service, plan, ticket, user }) {
   return layout({ config, title: 'Test checkout', body, user, narrow: true });
 }
 
-export function x402ConfirmPage({ config, e, service, plan, user, csrf }) {
+export function x402ConfirmPage({ config, e, service, plan, user, csrf, token }) {
   const p = user?.spendPolicy || {};
   const body = html`
   <div class="ah-dialog">
@@ -72,12 +72,37 @@ export function x402ConfirmPage({ config, e, service, plan, user, csrf }) {
     <div class="ah-ident" style="margin:16px 0">${serviceIcon(service, true)}<div><b>${service.title}: ${plan.title}</b><br><span class="ah-muted">${priceLabel(plan)} in ${plan.x402.asset} (${plan.x402.network})</span></div></div>
     <ul class="ah-steps-list">
       <li>Your agent's wallet pays each call with x402. This gateway never holds funds.</li>
-      <li>Your limits: ${formatMoney(p.perCallUsd ?? 0)} per call, ${formatMoney(p.perDayUsd ?? 0)} a day, ${formatMoney(p.perMonthUsd ?? 0)} a month. <a href="/my#spend">Change</a></li>
+      <li>Your limits: ${formatMoney(p.perCallUsd ?? 0)} per call, ${formatMoney(p.perDayUsd ?? 0)} a day, ${formatMoney(p.perMonthUsd ?? 0)} a month. Change them in My tools.</li>
     </ul>
     <form method="post" action="/upgrade/${e.id}" style="margin-top:16px">
-      ${csrfField(csrf)}<input type="hidden" name="confirm" value="1">
+      ${token ? html`<input type="hidden" name="t" value="${token}">` : csrfField(csrf)}<input type="hidden" name="confirm" value="1">
       <div class="ah-row" style="flex-wrap:nowrap"><a class="ah-btn ah-btn--ghost" href="/my" style="flex:1">Cancel</a><button class="ah-btn" name="plan" value="${plan.id}" style="flex:2">Turn on pay per call</button></div>
     </form>
   </div>`;
   return layout({ config, title: 'Pay per call', body, user, narrow: true });
+}
+
+export function donePage({ config, service, plan, user }) {
+  const body = html`
+  <div class="ah-dialog ah-center">
+    <span class="ah-pill ah-pill--good">Done</span>
+    <h1 style="font-size:1.5rem;margin-top:12px">${service.title} is on ${plan.title}</h1>
+    <p class="ah-muted">Your agent can use it right away. Go back to your agent app and carry on.</p>
+    <a class="ah-btn ah-btn--ghost" href="/my">Open My tools</a>
+  </div>`;
+  return layout({ config, title: 'Done', body, user, narrow: true });
+}
+
+export function loginConfirmPage({ config, token, tools, switching }) {
+  const body = html`
+  <div class="ah-dialog">
+    <h1 style="font-size:1.5rem">Open My tools?</h1>
+    <p class="ah-muted">This link opens the list of tools your agent connected${tools.length ? html`: <b>${tools.join(', ')}</b>` : ''}. From there you can upgrade, remove tools and set spending limits.</p>
+    ${switching ? html`<div class="ah-note ah-note--warn" style="margin-bottom:14px">This browser already has a different list of tools. Continuing switches to the list from the link. Only continue if your own agent gave you this link.</div>` : ''}
+    <form method="post" action="/my/login">
+      <input type="hidden" name="t" value="${token}">
+      <div class="ah-row" style="flex-wrap:nowrap"><a class="ah-btn ah-btn--ghost" href="/" style="flex:1">Cancel</a><button class="ah-btn" style="flex:2">Open My tools</button></div>
+    </form>
+  </div>`;
+  return layout({ config, title: 'Open My tools', body, narrow: true });
 }

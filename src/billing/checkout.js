@@ -43,12 +43,16 @@ export class Checkout {
     return b?.k === 'test-checkout' ? b : null;
   }
 
-  completeTest(ticket) {
+  async completeTest(ticket) {
     const b = this.readTestTicket(ticket);
     if (!b) throw new Error('This test checkout link expired. Start the upgrade again.');
     const e = this.entitlements.get(b.e);
     const plan = planById(this.services.get(e.serviceId), b.p);
-    this.recordPayment(e, plan, 'test', `test_${Date.now()}`);
+    // Each ticket works once.
+    const ref = `test_${b.exp}_${b.e}_${b.p}`;
+    if (this.store.findOne('payments', (p) => p.ref === ref)) return e;
+    await this.cancel(e);
+    this.recordPayment(e, plan, 'test', ref);
     return this.entitlements.changePlan(e.id, plan.id, { billing: { provider: 'test' } });
   }
 
@@ -101,18 +105,22 @@ export class Checkout {
   // Called when Stripe sends the person back. Confirms with Stripe directly, so
   // upgrades work even before the webhook is set up.
   async completeStripe(sessionId) {
+    if (!/^cs_[A-Za-z0-9_]+$/.test(sessionId)) return null;
     const s = await this.stripe('GET', `/v1/checkout/sessions/${encodeURIComponent(sessionId)}`);
     return this.applyStripeSession(s);
   }
 
-  applyStripeSession(s) {
+  // Applies a paid Checkout Session once. Replaying the return URL later does nothing.
+  async applyStripeSession(s) {
     if (s.status !== 'complete' || !['paid', 'no_payment_required'].includes(s.payment_status)) return null;
     const e = this.entitlements.get(s.metadata?.entitlement_id || s.client_reference_id);
     if (!e) return null;
+    if (this.store.findOne('payments', (p) => p.provider === 'stripe' && p.ref === s.id)) return e;
     const planId = s.metadata?.plan_id;
-    if (e.planId === planId && e.billing?.stripeSession === s.id) return e; // already applied
     const plan = planById(this.services.get(e.serviceId), planId);
     if (!plan) return null;
+    // Moving from one subscription to another: end the old one.
+    if (e.billing?.stripeSubscription && e.billing.stripeSubscription !== s.subscription) await this.cancel(e);
     this.recordPayment(e, plan, 'stripe', s.id);
     return this.entitlements.changePlan(e.id, plan.id, {
       billing: { provider: 'stripe', stripeSession: s.id, stripeSubscription: s.subscription || null, stripeCustomer: s.customer || null },
@@ -143,7 +151,7 @@ export class Checkout {
     const event = JSON.parse(rawBody);
     const obj = event.data?.object || {};
     if (event.type === 'checkout.session.completed') {
-      this.applyStripeSession(obj);
+      await this.applyStripeSession(obj);
     } else if (event.type === 'customer.subscription.deleted') {
       const e = this.store.findOne('entitlements', (x) => x.billing?.stripeSubscription === obj.id);
       if (e && e.status !== 'dropped') {
@@ -155,13 +163,20 @@ export class Checkout {
     return { received: true, type: event.type };
   }
 
+  // End any running subscription for this entitlement and forget it, so a later
+  // "subscription deleted" webhook can't touch whatever plan comes next.
   async cancel(e) {
-    if (e.billing?.provider === 'stripe' && e.billing.stripeSubscription && this.config.payments.stripe.secretKey) {
+    const sub = e.billing?.provider === 'stripe' ? e.billing.stripeSubscription : null;
+    if (sub && this.config.payments.stripe.secretKey) {
       try {
-        await this.stripe('DELETE', `/v1/subscriptions/${encodeURIComponent(e.billing.stripeSubscription)}`);
+        await this.stripe('DELETE', `/v1/subscriptions/${encodeURIComponent(sub)}`);
       } catch (err) {
-        this.log?.warn?.(`Could not cancel Stripe subscription for ${e.id}: ${err.message}`);
+        this.log?.warn?.(`Could not cancel Stripe subscription ${sub} for ${e.id}: ${err.message}`);
       }
+    }
+    if (sub) {
+      e.billing = { ...e.billing, stripeSubscription: null, canceledSubscription: sub };
+      this.store.save();
     }
   }
 

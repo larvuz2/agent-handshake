@@ -16,7 +16,7 @@ The gateway is one Node process with no dependencies. It keeps its data in one f
 | `PAYMENTS_MODE` | `test`, `stripe` or `external` | `stripe` if `STRIPE_SECRET_KEY` is set, else `test` |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Real payments | |
 | `X402_FACILITATOR_URL` | x402 facilitator | `https://x402.org/facilitator` (testnet) |
-| `TRUST_PROXY` | Set `false` if no proxy sits in front, so `X-Forwarded-For` is ignored | trusted |
+| `TRUST_PROXY` | How to find the visitor's IP (for the trial limit). `true`: the right-most `X-Forwarded-For` entry your proxy adds. A header name (e.g. `cf-connecting-ip`): that header. | Socket address; `fly-client-ip` on Fly; `true` on Render and Railway |
 
 Changing `PUBLIC_URL` later breaks existing connections, because tokens are bound to it. Pick it before you share links.
 

@@ -20,7 +20,7 @@ import { homePage } from './pages/home.js';
 import { installInfo, installPage } from './pages/install.js';
 import { consentPage } from './pages/consent.js';
 import { myPage } from './pages/my.js';
-import { testCheckoutPage, upgradePage, x402ConfirmPage } from './pages/upgrade.js';
+import { donePage, loginConfirmPage, testCheckoutPage, upgradePage, x402ConfirmPage } from './pages/upgrade.js';
 import { adminLoginPage, adminPage } from './pages/admin.js';
 import { errorPage } from './pages/layout.js';
 import { appendHeader } from './users.js';
@@ -55,7 +55,7 @@ export function createGateway(input, { baseDir, overrides, memory = false, fetch
   const users = new Users(store, config);
   const oauth = new OAuth({ store, config, services });
   const checkout = new Checkout({ config, store, entitlements, services, log });
-  const x402 = new X402({ config, store, users, log, fetchImpl });
+  const x402 = new X402({ config, store, users, entitlements, log, fetchImpl });
   const proxy = new McpProxy({ config, services, oauth, entitlements, users, store, x402, log });
   const ctx = { config, store, services, entitlements, users, oauth, checkout, x402, proxy, log };
 
@@ -140,12 +140,22 @@ function buildRoutes(ctx) {
     if (!user) throw new HttpError(401, 'Open this page in the browser where you added the tool, or ask your agent for a new link (run handshake_status).');
     return user;
   };
-  const ownEntitlement = (req, id) => {
-    const user = requireUser(req);
+  // Access to one entitlement: either the person's browser session, or a link scoped
+  // to this entitlement only (what the agent hands out).
+  const ownEntitlement = (req, id, token) => {
     const e = entitlements.get(id);
-    if (!e || e.userId !== user.id) throw new HttpError(404, 'That tool is not in your list. Open this link in the browser where you added it, or ask your agent for a new link.');
-    return { user, e, service: service(e.serviceId) };
+    const scopedUid = token ? users.readEntitlementToken(token, id) : null;
+    if (token && !scopedUid) throw new HttpError(400, 'This link expired. Ask your agent for a new one (it runs handshake_status).');
+    const user = scopedUid ? store.get('users', scopedUid) : requireUser(req);
+    if (!e || !user || e.userId !== user.id) throw new HttpError(404, 'That tool is not in your list. Open this link in the browser where you added it, or ask your agent for a new link.');
+    return { user, e, service: service(e.serviceId), scoped: Boolean(scopedUid) };
   };
+  // Changing plans away from a Stripe subscription cancels it and clears billing.
+  const switchPlan = async (e, planId) => {
+    await checkout.cancel(e);
+    return entitlements.changePlan(e.id, planId, { billing: null });
+  };
+  const donePath = (serviceId, planId) => `/checkout/done?service=${encodeURIComponent(serviceId)}&plan=${encodeURIComponent(planId)}`;
   const checkCsrf = (req, form, purpose) => {
     const uid = users.uidFromRequest(req);
     if (!users.checkCsrf(uid, form.csrf, purpose)) throw new HttpError(403, 'This form expired. Reload the page and try again.');
@@ -190,7 +200,7 @@ function buildRoutes(ctx) {
 
   // ---------- OAuth endpoints ----------
   route('POST', '/oauth/register', async (req, res) => {
-    const body = await readJson(req);
+    const body = await readJson(req, 16 * 1024);
     const client = oauth.register(body, clientIp(req));
     return sendJson(res, 201, client, { ...CORS_HEADERS, 'cache-control': 'no-store' });
   });
@@ -210,7 +220,8 @@ function buildRoutes(ctx) {
     try {
       v = await oauth.validateAuthorizeRequest(query);
     } catch (err) {
-      if (err.redirectUri && !err.display) return redirect(res, oauth.errorRedirect(err));
+      // Never redirect a request we couldn't validate: anyone can register a client,
+      // so that would be an open redirect (RFC 9700 §4.11.1). Show the problem instead.
       return html(res, errorPage(config, { title: 'This sign-in link is not valid', message: err.description || err.message, status: 400 }), 400);
     }
     const uid = users.ensureUid(req, res);
@@ -244,6 +255,7 @@ function buildRoutes(ctx) {
     try {
       ({ entitlement } = entitlements.connect(uid, svc.id, { ip: clientIp(req) }));
     } catch (err) {
+      if (err.code === 'revoked') return html(res, errorPage(config, { title: 'Access turned off', message: err.message, status: 403 }), 403);
       if (err.code !== 'trial_rate_limited') throw err;
       return html(
         res,
@@ -269,13 +281,25 @@ function buildRoutes(ctx) {
     return html(res, installPage({ config, service: s, user, existing: existing && existing.status !== 'dropped' ? existing : null }));
   });
 
+  // Sign-in links never sign you in by just opening them: you confirm with a button,
+  // and you're told if this browser already holds a different list of tools.
   route('GET', '/my/login', (req, res, { query }) => {
     const uid = users.consumeLoginToken(query.t);
     if (!uid || !store.get('users', uid)) {
       return html(res, errorPage(config, { title: 'This link expired', message: 'Ask your agent for a new one (it runs handshake_status).', status: 400 }), 400);
     }
+    const current = users.uidFromRequest(req);
+    if (current === uid) return redirect(res, '/my');
+    const theirs = entitlements.forUser(uid).filter((e) => e.status !== 'dropped').map((e) => services.get(e.serviceId)?.title).filter(Boolean);
+    const mine = current && store.get('users', current) ? entitlements.forUser(current).filter((e) => e.status !== 'dropped').length : 0;
+    return html(res, loginConfirmPage({ config, token: query.t, tools: theirs, switching: mine > 0 }));
+  });
+  route('POST', '/my/login', async (req, res) => {
+    const form = await readForm(req);
+    const uid = users.consumeLoginToken(form.t);
+    if (!uid || !store.get('users', uid)) throw new HttpError(400, 'This link expired. Ask your agent for a new one.');
     users.setCookie(res, uid);
-    return redirect(res, '/my');
+    return redirect(res, '/my', 303);
   });
 
   route('GET', '/my', (req, res, { query }) => {
@@ -298,7 +322,7 @@ function buildRoutes(ctx) {
     checkCsrf(req, form, 'my');
     const { e, service: s } = ownEntitlement(req, params.id);
     await checkout.cancel(e);
-    entitlements.drop(e.id);
+    entitlements.drop(e.id, 'person');
     log.info(`[${s.id}] removed by ${e.userId}`);
     return redirect(res, `/my?removed=${s.id}`, 303);
   });
@@ -307,7 +331,8 @@ function buildRoutes(ctx) {
     const form = await readForm(req);
     checkCsrf(req, form, 'my');
     const { e, service: s } = ownEntitlement(req, params.id);
-    entitlements.keepFree(e.id);
+    const free = freePlan(s);
+    if (free && e.planId !== free.id) await switchPlan(e, free.id);
     return redirect(res, `/my?kept=${s.id}`, 303);
   });
 
@@ -321,17 +346,15 @@ function buildRoutes(ctx) {
     return redirect(res, '/my?saved=1', 303);
   });
 
-  // Upgrade links from the agent carry a short-lived sign-in token (?t=).
-  route('GET', '/upgrade/(?<id>ent_[A-Za-z0-9_-]+)', (req, res, { params, query, url }) => {
-    if (query.t) {
-      const uid = users.consumeLoginToken(query.t);
-      if (uid && store.get('users', uid)) users.setCookie(res, uid);
-      url.searchParams.delete('t');
-      return redirect(res, url.pathname + url.search);
-    }
-    const { user, e, service: s } = ownEntitlement(req, params.id);
+  // Upgrade links from the agent carry a token for this one tool (?t=). It opens this
+  // page and nothing else; it doesn't sign the browser in.
+  route('GET', '/upgrade/(?<id>ent_[A-Za-z0-9_-]+)', (req, res, { params, query }) => {
+    const { user, e, service: s, scoped } = ownEntitlement(req, params.id, query.t);
     const uid = users.uidFromRequest(req);
-    return html(res, upgradePage({ config, e, service: s, user, csrf: users.csrf(uid, 'my'), selected: query.plan, mode: config.payments.mode }));
+    return html(
+      res,
+      upgradePage({ config, e, service: s, user, csrf: scoped ? '' : users.csrf(uid, 'my'), token: scoped ? query.t : null, selected: query.plan, mode: config.payments.mode }),
+    );
   });
 
   route('GET', '/upgrade', (req, res, { query }) => {
@@ -344,20 +367,22 @@ function buildRoutes(ctx) {
 
   route('POST', '/upgrade/(?<id>ent_[A-Za-z0-9_-]+)', async (req, res, { params }) => {
     const form = await readForm(req);
-    checkCsrf(req, form, 'my');
-    const { user, e, service: s } = ownEntitlement(req, params.id);
+    if (!form.t) checkCsrf(req, form, 'my');
+    const { user, e, service: s, scoped } = ownEntitlement(req, params.id, form.t);
     const plan = planById(s, form.plan);
     if (!plan) throw new HttpError(400, 'Pick a plan');
+    const why = entitlements.whyNotSwitch(e, plan);
+    if (why) throw new HttpError(400, why);
     if (isFree(plan)) {
-      entitlements.changePlan(e.id, plan.id);
-      return redirect(res, `/my?kept=${s.id}`, 303);
+      await switchPlan(e, plan.id);
+      return redirect(res, scoped ? donePath(s.id, plan.id) : `/my?kept=${s.id}`, 303);
     }
     if (plan.x402) {
       if (form.confirm !== '1') {
-        return html(res, x402ConfirmPage({ config, e, service: s, plan, user, csrf: users.csrf(user.id, 'my') }));
+        return html(res, x402ConfirmPage({ config, e, service: s, plan, user, csrf: scoped ? '' : users.csrf(user.id, 'my'), token: scoped ? form.t : null }));
       }
-      entitlements.changePlan(e.id, plan.id);
-      return redirect(res, `/my?payg=${s.id}`, 303);
+      await switchPlan(e, plan.id);
+      return redirect(res, scoped ? donePath(s.id, plan.id) : `/my?payg=${s.id}`, 303);
     }
     const to = await checkout.start(e, plan);
     return redirect(res, to, 303);
@@ -373,14 +398,19 @@ function buildRoutes(ctx) {
   route('POST', '/checkout/test', async (req, res) => {
     if (config.payments.mode !== 'test') throw new HttpError(400, 'Test checkout is off');
     const form = await readForm(req);
-    const e = checkout.completeTest(form.ticket);
+    const e = await checkout.completeTest(form.ticket);
     log.info(`[${e.serviceId}] test payment: ${e.id} -> ${e.planId}`);
-    return redirect(res, `/my?upgraded=${e.serviceId}`, 303);
+    return redirect(res, donePath(e.serviceId, e.planId), 303);
   });
   route('GET', '/checkout/stripe/return', async (req, res, { query }) => {
     const e = await checkout.completeStripe(query.session_id || '');
     if (!e) return redirect(res, '/my?canceled=1');
-    return redirect(res, `/my?upgraded=${e.serviceId}`);
+    return redirect(res, donePath(e.serviceId, e.planId));
+  });
+  route('GET', '/checkout/done', (req, res, { query }) => {
+    const s = service(query.service || '');
+    const plan = planById(s, query.plan) || s.plans[0];
+    return html(res, donePage({ config, service: s, plan, user: users.current(req) }));
   });
   route('POST', '/webhooks/stripe', async (req, res) => {
     const raw = (await readBody(req)).toString('utf8');
@@ -425,7 +455,8 @@ function buildRoutes(ctx) {
       entitlements.changePlan(e.id, form.plan, { billing: { provider: 'admin' } });
       notice = `Plan set to ${form.plan}.`;
     } else if (form.action === 'revoke') {
-      entitlements.drop(e.id);
+      await checkout.cancel(e);
+      entitlements.drop(e.id, 'admin');
       notice = 'Access revoked.';
     }
     return redirect(res, `/admin?notice=${encodeURIComponent(notice || '')}`, 303);
@@ -466,7 +497,7 @@ function buildRoutes(ctx) {
     const e = entitlements.get(params.id);
     if (!e) throw new HttpError(404, 'Not found');
     await checkout.cancel(e);
-    return sendJson(res, 200, entJson(entitlements.drop(e.id)));
+    return sendJson(res, 200, entJson(entitlements.drop(e.id, 'admin')));
   });
   route('POST', '/v1/entitlements/(?<id>ent_[A-Za-z0-9_-]+)/activate', async (req, res, { params }) => {
     requireAdmin(req);

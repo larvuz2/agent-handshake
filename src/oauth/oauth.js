@@ -84,8 +84,15 @@ export class OAuth {
   register(body, ip) {
     const uris = body.redirect_uris;
     if (!Array.isArray(uris) || uris.length === 0) throw new OAuthError('invalid_redirect_uri', 'redirect_uris is required');
+    if (uris.length > 8) throw new OAuthError('invalid_redirect_uri', 'At most 8 redirect_uris');
     for (const u of uris) {
-      if (!isAllowedRedirect(u)) throw new OAuthError('invalid_redirect_uri', `Redirect URI not allowed: ${u}`);
+      if (typeof u !== 'string' || u.length > 512 || !isAllowedRedirect(u)) {
+        throw new OAuthError('invalid_redirect_uri', `Redirect URI not allowed: ${String(u).slice(0, 200)}`);
+      }
+    }
+    if (this.store.all('clients').length >= MAX_CLIENTS) {
+      this.store.gc();
+      if (this.store.all('clients').length >= MAX_CLIENTS) throw new OAuthError('temporarily_unavailable', 'Too many registered clients', 503);
     }
     // Basic flood protection.
     const hourAgo = Date.now() - 3600000;
@@ -107,12 +114,12 @@ export class OAuth {
       token_endpoint_auth_method: method,
       grant_types: grantTypes,
       response_types: ['code'],
-      client_name: typeof body.client_name === 'string' ? body.client_name.slice(0, 100) : undefined,
-      client_uri: typeof body.client_uri === 'string' ? body.client_uri : undefined,
-      logo_uri: typeof body.logo_uri === 'string' ? body.logo_uri : undefined,
-      scope: typeof body.scope === 'string' ? body.scope : undefined,
-      software_id: body.software_id,
-      software_version: body.software_version,
+      client_name: short(body.client_name, 100),
+      client_uri: short(body.client_uri, 2000, true),
+      logo_uri: short(body.logo_uri, 2000, true),
+      scope: short(body.scope, 1000, true),
+      software_id: short(body.software_id, 100, true),
+      software_version: short(body.software_version, 100, true),
     };
     let secret;
     if (method !== 'none') {
@@ -339,6 +346,15 @@ export class OAuth {
     if (!entitlement) return { error: { code: 'invalid_token', description: 'Entitlement not found' } };
     return { token: t, grant, entitlement };
   }
+}
+
+const MAX_CLIENTS = 10000;
+
+// Keep strings small: client metadata is stored.
+function short(v, max, dropIfLong = false) {
+  if (typeof v !== 'string') return undefined;
+  if (v.length > max) return dropIfLong ? undefined : v.slice(0, max);
+  return v;
 }
 
 // ---------- redirect URI rules ----------

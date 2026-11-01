@@ -25,8 +25,8 @@ export function toAtomic(amount, decimals = 6) {
 }
 
 export class X402 {
-  constructor({ config, store, users, log, fetchImpl }) {
-    Object.assign(this, { config, store, users, log });
+  constructor({ config, store, users, entitlements, log, fetchImpl }) {
+    Object.assign(this, { config, store, users, entitlements, log });
     this.fetch = fetchImpl || ((...a) => fetch(...a));
   }
 
@@ -71,8 +71,10 @@ export class X402 {
       return { ok: false, detail: `${formatMoney(costUsd)} per call is above your ${formatMoney(p.perCallUsd)} per-call limit` };
     }
     const mine = this.store.find('entitlements', (x) => x.userId === e.userId);
-    let day = 0;
-    let month = 0;
+    // Money held by calls still in flight counts too, so parallel calls can't slip past.
+    const pending = this.entitlements?.pendingUsd(e.userId) || 0;
+    let day = pending;
+    let month = pending;
     for (const x of mine) {
       const days = this.store.usageDays(x.id);
       day += windowStats(days, Date.now(), 1).costUsd;
@@ -123,21 +125,25 @@ export class X402 {
     return { payload, requirements, payer: v.payer };
   }
 
-  // After the upstream answered successfully. Returns the message to send back.
-  async settle(ctx, decision, msg) {
-    const plan = ctx.service.plans.find((p) => p.id === ctx.entitlement.planId);
-    const fail = (why) => this.paymentRequiredResult(msg.id, this.paymentRequired(ctx, plan, decision.tool, why));
-    let s;
+  // Settle a verified payment. Returns the facilitator's answer, or {success:false}.
+  async settlePayment(decision) {
     try {
-      s = await this.facilitator('/settle', {
+      return await this.facilitator('/settle', {
         x402Version: 2,
         paymentPayload: decision.payment.payload,
         paymentRequirements: decision.payment.requirements,
       });
     } catch (err) {
       this.log?.warn?.(`x402 settle failed: ${err.message}`);
-      return fail('Settlement failed');
+      return { success: false, errorReason: 'facilitator_unreachable' };
     }
+  }
+
+  // After the upstream answered successfully. Returns the message to send back.
+  async settle(ctx, decision, msg) {
+    const plan = ctx.service.plans.find((p) => p.id === ctx.entitlement.planId);
+    const fail = (why) => this.paymentRequiredResult(msg.id, this.paymentRequired(ctx, plan, decision.tool, why));
+    const s = await this.settlePayment(decision);
     if (!s.success) return fail(`Settlement failed: ${s.errorReason || 'unknown reason'}`);
     const meta = { ...(msg.result?._meta || {}), [PAYMENT_RESPONSE_META]: { success: true, transaction: s.transaction, network: s.network, payer: s.payer } };
     return { ...msg, result: { ...msg.result, _meta: meta } };
