@@ -1,9 +1,9 @@
 name: Website
 
+# The site deploys on Netlify (netlify.toml). This workflow is an optional
+# alternative for GitHub Pages: enable Pages with "GitHub Actions" as the source,
+# then run it by hand from the Actions tab.
 on:
-  push:
-    branches: [main]
-    paths: [site/**, brand/**, docs/images/**, scripts/build-site.js, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:

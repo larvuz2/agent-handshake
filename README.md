@@ -198,6 +198,10 @@ Any agent app can read it and show the same three lines. Read the [spec](spec/SP
 3. For real payments, set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.
 4. Put the button on your site.
 
+## Website
+
+The landing page lives in [`site/`](site/). To publish it on **Netlify**, connect this repo: [`netlify.toml`](netlify.toml) already sets the build (`node scripts/build-site.js`) and the output folder (`site/dist`). No dependencies to install. Preview it locally with `npm run site` and open `site/dist/index.html` through any static server.
+
 ## Docs
 
 - [Publisher guide](docs/publishers.md): config, scopes, plans, payments, button, publisher API
