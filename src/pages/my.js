@@ -63,7 +63,7 @@ export function myPage({ config, user, entitlements, services, store, csrf, noti
           : html`<b>Connect your agent once</b><div class="ah-small ah-muted">Then every tool is one click away, and your agent can find tools on its own.</div>`}</div>
         ${hubGrants.length
           ? html`<form method="post" action="/my/agent-settings" class="ah-row" style="gap:10px">${csrfField(csrf)}
-              <label class="ah-check" style="margin:0"><input type="checkbox" name="auto" value="1" ${user.agentCanStartTrials !== false ? html`checked` : ''}> Let my agent start free trials</label>
+              <label class="ah-check" style="margin:0"><input type="checkbox" name="auto" value="1" ${user.agentCanStartTrials !== false ? html`checked` : ''}><span>Let my agent start free trials</span></label>
               <button class="ah-btn ah-btn--sm ah-btn--ghost">Save</button></form>`
           : html`<a class="ah-btn ah-btn--sm" href="/connect">Connect</a>`}
       </div>`
@@ -94,6 +94,6 @@ export function myPage({ config, user, entitlements, services, store, csrf, noti
     </div>
     <div style="margin-top:14px"><button class="ah-btn ah-btn--sm">Save limits</button></div>
   </form>
-  <p class="ah-small ah-muted" style="margin-top:24px">This list is tied to this browser. To open it somewhere else, ask your agent to run <code>handshake_status</code>: it returns a sign-in link.</p>`;
+  <p class="ah-small ah-muted" style="margin-top:24px">This list is tied to this browser. To open it somewhere else, ask your agent for "my tools": it returns a sign-in link.</p>`;
   return layout({ config, title: 'My tools', body, user });
 }

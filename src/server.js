@@ -143,7 +143,7 @@ function buildRoutes(ctx) {
   const html = (res, body, status = 200) => sendHtml(res, status, body, { 'cache-control': 'no-store', link: '</.well-known/ai-catalog.json>; rel="ai-catalog"' });
   const requireUser = (req) => {
     const user = users.current(req);
-    if (!user) throw new HttpError(401, 'Open this page in the browser where you added the tool, or ask your agent for a new link (run handshake_status).');
+    if (!user) throw new HttpError(401, 'Open this page in the browser where you added the tool, or ask your agent for a new link ("show my tools").');
     return user;
   };
   // Access to one entitlement: either the person's browser session, or a link scoped
@@ -151,7 +151,7 @@ function buildRoutes(ctx) {
   const ownEntitlement = (req, id, token) => {
     const e = entitlements.get(id);
     const scopedUid = token ? users.readEntitlementToken(token, id) : null;
-    if (token && !scopedUid) throw new HttpError(400, 'This link expired. Ask your agent for a new one (it runs handshake_status).');
+    if (token && !scopedUid) throw new HttpError(400, 'This link expired. Ask your agent for a new one ("show my tools").');
     const user = scopedUid ? store.get('users', scopedUid) : requireUser(req);
     if (!e || !user || e.userId !== user.id) throw new HttpError(404, 'That tool is not in your list. Open this link in the browser where you added it, or ask your agent for a new link.');
     return { user, e, service: service(e.serviceId), scoped: Boolean(scopedUid) };
@@ -384,7 +384,7 @@ function buildRoutes(ctx) {
   route('GET', '/my/login', (req, res, { query }) => {
     const uid = users.consumeLoginToken(query.t);
     if (!uid || !store.get('users', uid)) {
-      return html(res, errorPage(config, { title: 'This link expired', message: 'Ask your agent for a new one (it runs handshake_status).', status: 400 }), 400);
+      return html(res, errorPage(config, { title: 'This link expired', message: 'Ask your agent for a new one ("show my tools").', status: 400 }), 400);
     }
     const current = users.uidFromRequest(req);
     if (current === uid) return redirect(res, '/my');

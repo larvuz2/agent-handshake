@@ -92,8 +92,8 @@ export function hubConsentPage({ config, client, params, requestToken, csrf, pen
     <form method="post" action="/oauth/authorize">
       <input type="hidden" name="request" value="${requestToken}">
       ${csrfField(csrf)}
-      <label class="ah-check"><input type="hidden" name="auto" value="0"><input type="checkbox" name="auto" value="1" ${autoTrials ? html`checked` : ''}> Let my agent start free trials without asking me</label>
-      ${pending ? html`<label class="ah-check"><input type="checkbox" name="also" value="${pending.id}" checked> Also add <b>${pending.title}</b> now (${pendingSum.duration})</label>` : ''}
+      <label class="ah-check"><input type="hidden" name="auto" value="0"><input type="checkbox" name="auto" value="1" ${autoTrials ? html`checked` : ''}><span>Let my agent start free trials without asking me</span></label>
+      ${pending ? html`<label class="ah-check"><input type="checkbox" name="also" value="${pending.id}" checked><span>Also add <b>${pending.title}</b> now (${pendingSum.duration})</span></label>` : ''}
       <div class="ah-row" style="flex-wrap:nowrap;margin-top:14px">
         <button class="ah-btn ah-btn--lg ah-btn--ghost" name="decision" value="deny" style="flex:1">Cancel</button>
         <button class="ah-btn ah-btn--lg" name="decision" value="allow" style="flex:2" autofocus>Connect</button>
