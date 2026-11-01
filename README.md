@@ -200,6 +200,8 @@ Any agent app can read it and show the same three lines. Read the [spec](spec/SP
 
 ## Go live
 
+The full checklist, with a test plan for each agent app: [docs/LAUNCH.md](docs/LAUNCH.md). After deploying, run `npx github:larvuz2/agent-handshake check https://<your-hub>`.
+
 1. Deploy the gateway with Docker, Fly.io, Render or Railway. See [docs/deploy.md](docs/deploy.md).
 2. Set `PUBLIC_URL` to its HTTPS address.
 3. For real payments, set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.

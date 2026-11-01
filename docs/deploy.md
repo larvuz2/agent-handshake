@@ -2,6 +2,12 @@
 
 The gateway is one Node process with no dependencies. It keeps its data in one folder (`DATA_DIR`). Run **one instance** per data folder.
 
+After any deploy, test it from the outside:
+
+```bash
+npx github:larvuz2/agent-handshake check https://<your-hub>
+```
+
 ## Settings
 
 | Variable | What it does | Default |
