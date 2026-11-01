@@ -2,9 +2,13 @@
 
 **Name:** Agent Handshake. Two words, both capitalized. Never "AgentHandshake" or "AH".
 
-**Line:** Add to my agent. Three clicks, zero pasting.
+**Line:** Every tool for your agent. One handshake.
 
-**Short description:** `npm install` for agents, with a free trial, a wallet, and an uninstall button.
+**Category:** The open agent aggregator.
+
+**Short description:** Connect your agent once; it finds, tries and uses tools by itself, with free trials, spend limits and one place to manage them.
+
+**The button:** "Add to my agent" on a tool's site; "Connect your agent" on the hub.
 
 ## The mark
 

@@ -73,6 +73,8 @@ export function inspectCard(card, cardUrl) {
   const remote = (card.remotes || []).find((r) => r.type === 'streamable-http') || (card.remotes || [])[0];
   const mcpUrl = remote?.url || null;
   const terms = card._meta?.[TERMS_KEY] || null;
+  // A hub card: one MCP server that aggregates many tools (each with its own terms).
+  const hub = card._meta?.['dev.handshake/hub'] || null;
   const warnings = [];
   // The MCP Registry verifies a namespace, not the remote URL. So check that the
   // card and the server it points to live on the same origin.
@@ -82,8 +84,8 @@ export function inspectCard(card, cardUrl) {
   if (mcpUrl && new URL(mcpUrl).protocol !== 'https:' && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(new URL(mcpUrl).hostname)) {
     warnings.push('The server does not use HTTPS.');
   }
-  if (!terms) warnings.push('No Agent Handshake terms: no trial or spend limits are declared.');
-  return { cardUrl, card, mcpUrl, terms, summary: terms ? summarizeTerms(terms) : null, sameOrigin, warnings };
+  if (!terms && !hub) warnings.push('No Agent Handshake terms: no trial or spend limits are declared.');
+  return { cardUrl, card, mcpUrl, terms, hub, summary: terms ? summarizeTerms(terms) : null, sameOrigin, warnings };
 }
 
 // ---------- rug-pull protection ----------

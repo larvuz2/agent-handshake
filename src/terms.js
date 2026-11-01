@@ -9,6 +9,8 @@ const PERIODS = new Set(['total', 'day', 'month']);
 // x402 networks with a built-in USDC address (see src/billing/x402.js).
 export const KNOWN_X402_NETWORKS = new Set(['eip155:84532', 'eip155:8453']);
 export const TESTNET_X402_NETWORKS = new Set(['eip155:84532']);
+// Paths under /mcp/ that are not tools.
+const RESERVED_IDS = new Set(['server-card', 'hub', 'connect', 'agents']);
 
 export class ConfigError extends Error {
   constructor(problems) {
@@ -27,6 +29,11 @@ export function normalizeService(raw, index = 0) {
   const id = raw.id;
   if (typeof id !== 'string' || !/^[a-z0-9][a-z0-9-]{0,62}$/.test(id)) {
     p.push(`${where}.id must be lowercase letters, digits and dashes (got ${JSON.stringify(id)})`);
+  } else if (RESERVED_IDS.has(id) || id.includes('--')) {
+    p.push(`${where}.id "${id}" is reserved or contains "--"; pick another`);
+  }
+  if (raw.tags !== undefined && (!Array.isArray(raw.tags) || raw.tags.some((t) => typeof t !== 'string'))) {
+    p.push(`${where}.tags must be a list of words, e.g. ["video", "creative"]`);
   }
   const title = raw.title || raw.name || id;
   const upstream = raw.upstream || {};
@@ -142,6 +149,8 @@ export function normalizeService(raw, index = 0) {
     upstream: { url: upstream.url, headers: upstream.headers || {}, timeoutMs: upstream.timeoutMs || 120000 },
     scopes,
     plans: plans.filter(Boolean),
+    tags: Array.isArray(raw.tags) ? raw.tags.map((t) => String(t).toLowerCase()).slice(0, 12) : [],
+    category: typeof raw.category === 'string' ? raw.category : undefined,
     statusTool: raw.statusTool !== false,
     hideLockedTools: raw.hideLockedTools !== false,
     trialsPerIpPerDay: raw.trialsPerIpPerDay ?? 5,

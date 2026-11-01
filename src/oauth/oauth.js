@@ -7,6 +7,7 @@
 import { HttpError } from '../util/http.js';
 import { pkceMatches, randomId, randomToken, safeEqual, sha256 } from '../util/crypto.js';
 import { fetchClientMetadata } from './cimd.js';
+import { HUB_ID, hubService } from '../hub/identity.js';
 
 export class OAuthError extends Error {
   constructor(error, description, status = 400) {
@@ -28,12 +29,19 @@ export class OAuth {
     this.issuer = config.publicUrl;
   }
 
+  // The hub is /mcp; each tool is /mcp/<id>.
   resourceUrl(serviceId) {
-    return `${this.config.publicUrl}/mcp/${serviceId}`;
+    return serviceId === HUB_ID ? `${this.config.publicUrl}/mcp` : `${this.config.publicUrl}/mcp/${serviceId}`;
   }
 
   resourceMetadataUrl(serviceId) {
-    return `${this.config.publicUrl}/.well-known/oauth-protected-resource/mcp/${serviceId}`;
+    return serviceId === HUB_ID
+      ? `${this.config.publicUrl}/.well-known/oauth-protected-resource/mcp`
+      : `${this.config.publicUrl}/.well-known/oauth-protected-resource/mcp/${serviceId}`;
+  }
+
+  serviceOrHub(serviceId) {
+    return serviceId === HUB_ID ? hubService(this.config) : this.services.get(serviceId);
   }
 
   // ---------- metadata ----------
@@ -62,14 +70,14 @@ export class OAuth {
   }
 
   protectedResourceMetadata(serviceId) {
-    const service = this.services.get(serviceId);
+    const service = this.serviceOrHub(serviceId);
     return {
       resource: this.resourceUrl(serviceId),
       authorization_servers: [this.issuer],
       bearer_methods_supported: ['header'],
       scopes_supported: Object.keys(service.scopes),
       resource_name: service.title,
-      resource_documentation: `${this.config.publicUrl}/add/${serviceId}`,
+      resource_documentation: serviceId === HUB_ID ? `${this.config.publicUrl}/connect` : `${this.config.publicUrl}/add/${serviceId}`,
     };
   }
 
@@ -172,7 +180,7 @@ export class OAuth {
     }
     return {
       client,
-      service: this.services.get(serviceId),
+      service: this.serviceOrHub(serviceId),
       params: {
         client_id: q.client_id,
         redirect_uri: redirectUri,
@@ -187,11 +195,12 @@ export class OAuth {
   serviceForResource(resource) {
     if (!resource) return this.services.size === 1 ? [...this.services.keys()][0] : null;
     const r = String(resource).replace(/\/+$/, '');
+    if (r === this.resourceUrl(HUB_ID)) return HUB_ID;
     for (const id of this.services.keys()) {
       if (r === this.resourceUrl(id)) return id;
     }
-    // Some clients send the origin. That only works with one service.
-    if (r === this.config.publicUrl && this.services.size === 1) return [...this.services.keys()][0];
+    // Some clients send the origin: that means the hub.
+    if (r === this.config.publicUrl) return HUB_ID;
     return null;
   }
 
@@ -203,7 +212,7 @@ export class OAuth {
       clientId: client.client_id,
       clientName: client.client_name || null,
       clientHost: describeRedirect(client.redirect_uris[0]).host,
-      entitlementId: entitlement.id,
+      entitlementId: entitlement?.id || null,
       createdAt: Date.now(),
       revokedAt: null,
       clientInfo: null,
@@ -287,8 +296,10 @@ export class OAuth {
     if (t.clientId !== client.client_id) throw new OAuthError('invalid_grant', 'Refresh token was issued to another client');
     const grant = this.store.get('grants', t.grantId);
     if (!grant || grant.revokedAt) throw new OAuthError('invalid_grant', 'This connection was removed');
-    const ent = this.store.get('entitlements', grant.entitlementId);
-    if (!ent || ent.status === 'dropped') throw new OAuthError('invalid_grant', 'This tool was removed');
+    if (grant.serviceId !== HUB_ID) {
+      const ent = this.store.get('entitlements', grant.entitlementId);
+      if (!ent || ent.status === 'dropped') throw new OAuthError('invalid_grant', 'This tool was removed');
+    }
     this.store.delete('tokens', key); // rotate
     return this.issueTokens(grant, t.resource);
   }
@@ -342,6 +353,11 @@ export class OAuth {
     }
     const grant = this.store.get('grants', t.grantId);
     if (!grant || grant.revokedAt) return { error: { code: 'invalid_token', description: 'Connection removed' } };
+    if (serviceId === HUB_ID) {
+      const user = this.store.get('users', grant.userId);
+      if (!user) return { error: { code: 'invalid_token', description: 'Account not found' } };
+      return { token: t, grant, user };
+    }
     const entitlement = this.store.get('entitlements', t.entitlementId);
     if (!entitlement) return { error: { code: 'invalid_token', description: 'Entitlement not found' } };
     return { token: t, grant, entitlement };

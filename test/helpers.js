@@ -109,8 +109,9 @@ export function pkce() {
  * metadata, register (DCR) or use a CIMD client_id, run the authorize step in a
  * browser, approve, and swap the code for tokens.
  */
-export async function connect(base, serviceId, { browser = new Browser(), clientId, redirectUri = 'http://127.0.0.1:53682/callback', decision = 'allow', sendResource = true } = {}) {
-  const mcpUrl = `${base}/mcp/${serviceId}`;
+export async function connect(base, serviceId, { browser = new Browser(), clientId, redirectUri = 'http://127.0.0.1:53682/callback', decision = 'allow', sendResource = true, form = {} } = {}) {
+  // serviceId null = the hub at /mcp
+  const mcpUrl = serviceId ? `${base}/mcp/${serviceId}` : `${base}/mcp`;
   const r401 = await fetch(mcpUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
   if (r401.status !== 401) throw new Error(`expected 401, got ${r401.status}`);
   const prmUrl = /resource_metadata="([^"]+)"/.exec(r401.headers.get('www-authenticate'))[1];
@@ -146,7 +147,7 @@ export async function connect(base, serviceId, { browser = new Browser(), client
   const html = await page.text();
   if (page.status !== 200) throw Object.assign(new Error(`authorize page ${page.status}`), { html, status: page.status });
   const fields = formFields(html);
-  const decided = await browser.post(`${base}/oauth/authorize`, { ...fields, decision });
+  const decided = await browser.post(`${base}/oauth/authorize`, { ...fields, ...form, decision });
   const location = decided.headers.get('location');
   if (!location) throw Object.assign(new Error(`no redirect after consent (${decided.status})`), { html: await decided.text() });
   const back = new URL(location);

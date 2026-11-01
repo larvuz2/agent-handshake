@@ -2,10 +2,10 @@
   <img src="brand/logo.svg" alt="Agent Handshake" width="360">
 </p>
 
-<h3 align="center">Add to my agent. Three clicks, zero pasting.</h3>
+<h3 align="center">The open agent aggregator. Every tool for your agent, one handshake.</h3>
 
 <p align="center">
-  <code>npm install</code> for agents, with a free trial, a wallet, and an uninstall button.
+  Connect your agent once. It finds, tries and uses tools by itself,<br>with free trials, spend limits and one place to manage everything.
 </p>
 
 <p align="center">
@@ -17,23 +17,24 @@
 
 ---
 
-Today, giving an AI agent a new tool usually means pasting a block of markdown or an API key into it. There's no identity, no trial, no billing, no versioning and no clean way to remove it.
+Today, giving an AI agent a new ability means pasting instructions or an API key into it, one tool at a time. There's no identity, no trial, no billing and no clean way to remove anything.
 
-**Agent Handshake** replaces that with a handshake. Put the gateway in front of any remote [MCP](https://modelcontextprotocol.io) server and you get:
+**Agent Handshake** is one front door to every tool:
 
-1. **Click one button.** An *Add to my agent* button on any website opens the right install link for Claude, Claude Code, Cursor, VS Code, Goose, LM Studio or ChatGPT. There's nothing to copy.
-2. **Read three lines, start the trial.** A consent screen shows what the tool can access, how long it's free, and the spend limit ($0 by default). Then **Start free trial**.
-3. **Keep it, pay for it, or remove it.** Every call is metered. *My tools* shows what's working and what's unused, with **Upgrade**, **Keep free** and **Remove** buttons. Removing revokes access at once.
+- **For people:** connect your agent (Claude, Cursor, VS Code…) to an Agent Handshake hub **once**. Then add any tool with one click, or just ask your agent. Free trials start at a $0 spend limit, and *My tools* shows what's working, with **Upgrade** and **Remove** buttons.
+- **For agents:** one MCP connection with seven tools: `handshake_search`, `handshake_add`, `handshake_call`, `handshake_tool_info`, `handshake_my_tools`, `handshake_upgrade`, `handshake_remove`. When the person asks for something new, the agent finds a tool, starts its trial and uses it. Added tools also appear natively as `tool__action`.
+- **For tool makers:** put your MCP server behind the hub and every connected agent can find it, try it and pay for it. Your server doesn't change.
 
-It's built on standards that already exist: MCP, OAuth 2.1, MCP Server Cards, the AI Catalog and x402. Agent Handshake adds the missing layer: **trials, metering, keep/drop signals and spend limits.**
+It is **an open protocol and an open-source product**. The protocol builds on MCP, OAuth 2.1, Server Cards, the AI Catalog and x402, and adds the missing layer: trial and price terms, one install link, entitlements and spend limits. The product is the hub that anyone can run, and that you can host as the flagship.
 
 <p align="center">
-  <img src="docs/images/consent.png" alt="Consent screen: Claude wants to add Lumen Video to your agent. Can access: create and read your video projects, render 480p previews. Free for 7 days, up to 100 calls. Spend limit: $0. Buttons: Cancel, Start free trial." width="420">
+  <img src="docs/images/hub-consent.png" alt="Connect screen: Claude wants to connect to Agent Handshake. Find, try and use tools for you. Free trials start on their own. Spend limit $0, paid plans always need your OK. Checkbox: Let my agent start free trials without asking me." width="380">
   &nbsp;
-  <img src="docs/images/my-tools.png" alt="My tools page: Lumen Video on a free trial, working great, with Upgrade $9/mo, Keep free and Remove buttons. Quick Notes, unused, with a Remove button." width="420">
+  <img src="docs/images/storefront.png" alt="The catalog: Lumen Video, Quick Notes, World Clock, Text Tools and Unit Converter, each with its free trial and an Add to my agent button." width="460">
 </p>
 
-**See the whole user experience on one page:** [user-experience.pdf](docs/user-experience.pdf), screen by screen, from clicking the button to removing a tool.
+- The user experience on one page, screen by screen: [user-experience.pdf](docs/user-experience.pdf)
+- Why this is a company, and how it gets users: [PITCH.md](docs/PITCH.md)
 
 ## Try it in 60 seconds
 
@@ -50,23 +51,24 @@ git clone https://github.com/larvuz2/agent-handshake && cd agent-handshake
 npm run demo
 ```
 
-This starts the gateway on `http://localhost:7410` with two demo tools, **Lumen Video** (fictional video maker with a 7-day trial and a $9/mo Pro plan) and **Quick Notes** (free). Payments run in test mode.
+This starts a hub on `http://localhost:7410` with five demo tools: **Lumen Video** (fictional video maker: 7-day trial, then $9/mo), **Quick Notes**, **World Clock**, **Text Tools** and **Unit Converter**. Payments run in test mode.
 
-Then:
+Then connect your agent **once**. With **Claude Code**, for example:
 
-1. Open **http://localhost:7410/add/lumen-video** and pick your agent app.
-2. In **Claude Code**, for example:
-   ```bash
-   claude mcp add --transport http lumen-video http://localhost:7410/mcp/lumen-video
-   ```
-   Run `/mcp`, choose **lumen-video**, then **Authenticate**. Your browser shows the free-trial screen. Click **Start free trial**.
-3. Ask your agent: *"Make a 15-second video project about a sunrise over a lake, then render a preview."*
-4. Ask: *"Render it in 4K."* The 4K render is a Pro feature, so the agent gets an upgrade link.
-5. Ask: *"What's my Lumen Video plan?"* The built-in `handshake_status` tool answers with days left, calls used and links.
-6. Open **http://localhost:7410/my** to upgrade (simulated checkout), switch to the free plan, or remove the tool.
-7. Open **http://localhost:7410/admin** with the admin key printed at startup to see the publisher dashboard.
+```bash
+claude mcp add --transport http agent-handshake http://localhost:7410/mcp
+```
 
-Cursor, VS Code, Goose and LM Studio on the same computer work with `localhost` too. For **claude.ai** or **ChatGPT**, the gateway needs a public HTTPS URL. See [Deploy](docs/deploy.md).
+Run `/mcp`, choose **agent-handshake**, then **Authenticate**. Your browser shows one screen: click **Connect**. Now ask your agent things it couldn't do before:
+
+1. *"What time is it in Tokyo?"* The agent searches the hub, adds **World Clock** and answers.
+2. *"Make a 15-second video of a sunrise over a lake."* It adds **Lumen Video** (free trial) and makes the project.
+3. *"Render it in 4K."* That's a Pro feature, so the agent gives you an upgrade link (simulated checkout in test mode).
+4. *"Show my tools."* You get your tools, usage, and a link to **My tools**.
+
+You can also browse **http://localhost:7410** and click **Add to my agent** on any tool, or open **/admin** (admin key printed at startup) for the publisher dashboard.
+
+Cursor, VS Code, Goose and LM Studio on the same computer work with `localhost` too. For **claude.ai** or **ChatGPT**, the hub needs a public HTTPS URL. See [Deploy](docs/deploy.md).
 
 ## Put your MCP server behind it
 
@@ -126,31 +128,34 @@ See the [publisher guide](docs/publishers.md) for scopes, plans, payments and th
 sequenceDiagram
   autonumber
   participant P as Person
-  participant A as Agent app
-  participant G as Agent Handshake gateway
-  participant S as Your MCP server
-  P->>G: Clicks "Add to my agent"
-  G-->>A: Install link with the MCP URL
-  A->>G: Calls the MCP URL
-  G-->>A: 401 + where to sign in (RFC 9728)
-  A->>G: OAuth 2.1: register (CIMD or DCR), authorize with PKCE
-  G-->>P: Consent: what it can access, free for 7 days, $0 limit
-  P->>G: Start free trial
-  G-->>A: Token scoped to this tool and plan
-  A->>G: tools/call
-  G->>G: Check plan, scopes, call cap, expiry, spend. Meter.
-  G->>S: Forward with your server's credential
-  S-->>G: Result
-  G-->>A: Result (or an upgrade link when a limit is hit)
+  participant A as Agent (Claude, Cursor…)
+  participant H as Agent Handshake hub
+  participant T as Tool's MCP server
+  Note over P,H: Once
+  A->>H: Connect to /mcp (OAuth 2.1 + PKCE)
+  H-->>P: One screen: find and try tools, $0 spend limit
+  P->>H: Connect
+  Note over P,T: Every time the person needs something new
+  P->>A: "Make me a video of a sunrise"
+  A->>H: handshake_search "video"
+  H-->>A: Lumen Video: free 7 days, then $9/mo
+  A->>H: handshake_add lumen-video
+  H->>H: Start the trial (if the person allows it)
+  A->>H: lumen-video__create_project
+  H->>H: Check plan, scopes, caps, expiry, spend. Meter.
+  H->>T: Forward with the tool's own credential
+  T-->>A: Result (or an upgrade link when a limit is hit)
 ```
 
 | Piece | What it does |
 |---|---|
-| **Discovery** | Publishes an [MCP Server Card](https://modelcontextprotocol.io/seps/2127-mcp-server-cards) per tool (`/mcp/<id>/server-card`), an [AI Catalog](https://ai-catalog.io/spec/) (`/.well-known/ai-catalog.json`) and `llms.txt`. Trial and pricing terms ride along in the card's `_meta["dev.handshake/terms"]`. |
-| **Install page** | `/add/<id>`: the three-line summary plus the right install link for each agent app. |
+| **Discovery** | Publishes a hub [Server Card](https://modelcontextprotocol.io/seps/2127-mcp-server-cards) (`/mcp/server-card`) and one per tool, an [AI Catalog](https://ai-catalog.io/spec/) that lists the hub first, and an `llms.txt` and `/agents` page written for agents. Trial and pricing terms ride along in each card's `_meta["dev.handshake/terms"]`. |
+| **Hub** | `/mcp`: one MCP connection with seven agent tools. Added tools appear as `tool__action`, each checked and metered against its own plan. Sends `tools/list_changed` so apps refresh. |
+| **Storefront and one-click add** | `/` lists every tool; `/connect` connects an agent once; `/add/<id>` (the button on a tool's website) brings that tool along on first connect, and is one click after that. |
+| **Install page** | Each tool can still be added on its own as a separate connector, with the right install link for each agent app. |
 | **OAuth 2.1** | Protected Resource Metadata, Client ID Metadata Documents and Dynamic Client Registration, PKCE S256, resource indicators, `iss`, refresh rotation, revocation. The consent screen *is* the trial screen. |
 | **Entitlements** | Trial, active, expired or removed. Scopes decide which tools a plan includes; caps, expiry and spend limits are checked on every call. |
-| **MCP proxy** | Works with session-based (2025-06-18, 2025-11-25) and stateless (2026-07-28) clients, JSON or streamed responses. Hides tools a plan doesn't include and adds a `handshake_status` tool. |
+| **MCP proxy** | For direct, per-tool connections. Works with session-based (2025-06-18, 2025-11-25) and stateless (2026-07-28) clients, JSON or streamed responses. Hides tools a plan doesn't include and adds a `handshake_status` tool. |
 | **Upgrade prompts** | When a limit is hit, apps that support it get a URL-mode elicitation (the `-32042` error or an `input_required` result). Everyone else gets a clear message with links. |
 | **Payments** | Stripe Checkout (subscriptions), a simulated test mode, your own checkout via the publisher API, or **x402** pay-per-call in USDC, checked against the person's spending limits. |
 | **My tools** | Keep/drop labels from real usage (*Working great*, *Try more*, *Unused*, *Expensive*, *Having trouble*), recent activity, upgrade, keep free, remove, spending limits. |
@@ -206,7 +211,8 @@ The landing page lives in [`site/`](site/). To publish it on **Netlify**, connec
 
 ## Docs
 
-- [The user experience, screen by screen](docs/user-experience.pdf) (one-page PDF)
+- [The user experience, screen by screen](docs/user-experience.pdf) (one-page PDF; [single-tool version](docs/user-experience-single-tool.pdf))
+- [The pitch: business model and go-to-market](docs/PITCH.md)
 - [Publisher guide](docs/publishers.md): config, scopes, plans, payments, button, publisher API
 - [Agent apps and the host kit](docs/hosts.md): install links per app, building native support
 - [Deploy](docs/deploy.md): Docker, Fly.io, Render, Railway, tunnels, Stripe, x402
@@ -242,14 +248,15 @@ npm install && npm run test:interop   # also run the official MCP SDK client aga
 
 ## Status and roadmap
 
-v0.1 is a working, single-instance gateway. Next:
+v0.2 is a working, single-instance hub. Next:
 
+- **Federation:** one hub listing tools hosted on other Agent Handshake gateways, so the catalog can grow without central hosting
+- **A public catalog repo:** tool makers list their MCP server with a pull request
 - Postgres store for running more than one instance
 - Email or passkey sign-in, so *My tools* follows you across devices
+- Reputation from real usage across hubs (opt-in, aggregated) to rank search results
 - x402 on mainnet with a production facilitator
-- Native support for the terms in agent apps, starting with Hermes
-- Proposing `dev.handshake/terms` to the MCP Server Card and AI Catalog groups
-- Opt-in, aggregated reputation signals across gateways
+- Proposing `dev.handshake/terms` and `dev.handshake/hub` to the MCP Server Card and AI Catalog groups
 
 ## License
 

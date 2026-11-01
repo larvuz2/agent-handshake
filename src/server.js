@@ -13,10 +13,9 @@ import { Checkout } from './billing/checkout.js';
 import { X402 } from './billing/x402.js';
 import { aiCatalog, AI_CATALOG_TYPE, llmsTxt, serverCard, SERVER_CARD_TYPE } from './discovery.js';
 import { badgeSvg, buttonScript } from './button.js';
-import { CORS_HEADERS, HttpError, clientIp, readBody, readForm, readJson, redirect, send, sendHtml, sendJson } from './util/http.js';
+import { CORS_HEADERS, HttpError, clientIp, parseCookies, readBody, readForm, readJson, redirect, send, sendHtml, sendJson } from './util/http.js';
 import { safeEqual, sign, verify } from './util/crypto.js';
 import { freePlan, isFree, planById } from './terms.js';
-import { homePage } from './pages/home.js';
 import { installInfo, installPage } from './pages/install.js';
 import { consentPage } from './pages/consent.js';
 import { myPage } from './pages/my.js';
@@ -24,6 +23,12 @@ import { donePage, loginConfirmPage, testCheckoutPage, upgradePage, x402ConfirmP
 import { adminLoginPage, adminPage } from './pages/admin.js';
 import { errorPage } from './pages/layout.js';
 import { appendHeader } from './users.js';
+import { Hub } from './hub/hub.js';
+import { HUB_ID } from './hub/identity.js';
+import { hubServerCard } from './discovery.js';
+import { agentsPage, connectPage, hubAddPage, hubAddedPage, storefrontPage } from './pages/hub.js';
+import { hubConsentPage } from './pages/consent.js';
+import { cookie } from './util/http.js';
 
 const BRAND_DIR = new URL('../brand/', import.meta.url);
 const ASSETS = {
@@ -57,7 +62,8 @@ export function createGateway(input, { baseDir, overrides, memory = false, fetch
   const checkout = new Checkout({ config, store, entitlements, services, log });
   const x402 = new X402({ config, store, users, entitlements, log, fetchImpl });
   const proxy = new McpProxy({ config, services, oauth, entitlements, users, store, x402, log });
-  const ctx = { config, store, services, entitlements, users, oauth, checkout, x402, proxy, log };
+  const hub = new Hub({ config, services, oauth, entitlements, users, store, x402, proxy, checkout, log });
+  const ctx = { config, store, services, entitlements, users, oauth, checkout, x402, proxy, hub, log };
 
   const routes = buildRoutes(ctx);
   const server = createServer(async (req, res) => {
@@ -98,7 +104,7 @@ export function createGateway(input, { baseDir, overrides, memory = false, fetch
 }
 
 function handleError({ config, log }, req, res, url, err) {
-  const api = url.pathname.startsWith('/oauth/') || url.pathname.startsWith('/v1/') || url.pathname.startsWith('/mcp/') || url.pathname.startsWith('/webhooks/');
+  const api = /^\/(oauth|v1|mcp|webhooks)(\/|$)/.test(url.pathname);
   if (err instanceof OAuthError) return sendJson(res, err.status, err.toJSON(), { ...CORS_HEADERS, 'cache-control': 'no-store' });
   const status = err instanceof HttpError ? err.status : 500;
   if (status >= 500) log.error(`${req.method} ${url.pathname}: ${err.stack || err.message}`);
@@ -126,7 +132,7 @@ const DISCOVERY_CORS = {
 };
 
 function buildRoutes(ctx) {
-  const { config, store, services, entitlements, users, oauth, checkout, proxy, log } = ctx;
+  const { config, store, services, entitlements, users, oauth, checkout, proxy, hub, log } = ctx;
   const R = [];
   const route = (method, path, handler) => R.push([method, new RegExp(`^${path}$`), handler]);
   const service = (id) => {
@@ -137,7 +143,7 @@ function buildRoutes(ctx) {
   const html = (res, body, status = 200) => sendHtml(res, status, body, { 'cache-control': 'no-store', link: '</.well-known/ai-catalog.json>; rel="ai-catalog"' });
   const requireUser = (req) => {
     const user = users.current(req);
-    if (!user) throw new HttpError(401, 'Open this page in the browser where you added the tool, or ask your agent for a new link (run handshake_status).');
+    if (!user) throw new HttpError(401, 'Open this page in the browser where you added the tool, or ask your agent for a new link ("show my tools").');
     return user;
   };
   // Access to one entitlement: either the person's browser session, or a link scoped
@@ -145,7 +151,7 @@ function buildRoutes(ctx) {
   const ownEntitlement = (req, id, token) => {
     const e = entitlements.get(id);
     const scopedUid = token ? users.readEntitlementToken(token, id) : null;
-    if (token && !scopedUid) throw new HttpError(400, 'This link expired. Ask your agent for a new one (it runs handshake_status).');
+    if (token && !scopedUid) throw new HttpError(400, 'This link expired. Ask your agent for a new one ("show my tools").');
     const user = scopedUid ? store.get('users', scopedUid) : requireUser(req);
     if (!e || !user || e.userId !== user.id) throw new HttpError(404, 'That tool is not in your list. Open this link in the browser where you added it, or ask your agent for a new link.');
     return { user, e, service: service(e.serviceId), scoped: Boolean(scopedUid) };
@@ -182,6 +188,9 @@ function buildRoutes(ctx) {
   route('GET', '/.well-known/ai-catalog.json', (req, res) =>
     sendCacheable(req, res, JSON.stringify(aiCatalog(config, [...services.values()]), null, 2), AI_CATALOG_TYPE, DISCOVERY_CORS),
   );
+  route('GET', '/mcp/server-card', (req, res) =>
+    sendCacheable(req, res, JSON.stringify(hubServerCard(config, [...services.values()]), null, 2), SERVER_CARD_TYPE, DISCOVERY_CORS),
+  );
   route('GET', '/mcp/(?<id>[a-z0-9-]+)/server-card', (req, res, { params }) =>
     sendCacheable(req, res, JSON.stringify(serverCard(config, service(params.id)), null, 2), SERVER_CARD_TYPE, DISCOVERY_CORS),
   );
@@ -190,13 +199,14 @@ function buildRoutes(ctx) {
   const asMeta = (req, res) => sendJson(res, 200, oauth.authorizationServerMetadata(), { ...CORS_HEADERS, 'cache-control': 'public, max-age=300' });
   route('GET', '/.well-known/oauth-authorization-server', asMeta);
   route('GET', '/.well-known/openid-configuration', asMeta);
+  route('GET', '/.well-known/oauth-protected-resource/mcp', (req, res) =>
+    sendJson(res, 200, oauth.protectedResourceMetadata(HUB_ID), { ...CORS_HEADERS, 'cache-control': 'public, max-age=300' }),
+  );
   route('GET', '/.well-known/oauth-protected-resource/mcp/(?<id>[a-z0-9-]+)', (req, res, { params }) =>
     sendJson(res, 200, oauth.protectedResourceMetadata(service(params.id).id), { ...CORS_HEADERS, 'cache-control': 'public, max-age=300' }),
   );
-  route('GET', '/.well-known/oauth-protected-resource', (req, res) => {
-    if (services.size === 1) return sendJson(res, 200, oauth.protectedResourceMetadata([...services.keys()][0]), CORS_HEADERS);
-    return sendJson(res, 200, { resource: config.publicUrl, authorization_servers: [config.publicUrl], bearer_methods_supported: ['header'] }, CORS_HEADERS);
-  });
+  // The root describes the hub, the main thing to connect to.
+  route('GET', '/.well-known/oauth-protected-resource', (req, res) => sendJson(res, 200, oauth.protectedResourceMetadata(HUB_ID), CORS_HEADERS));
 
   // ---------- OAuth endpoints ----------
   route('POST', '/oauth/register', async (req, res) => {
@@ -225,8 +235,17 @@ function buildRoutes(ctx) {
       return html(res, errorPage(config, { title: 'This sign-in link is not valid', message: err.description || err.message, status: 400 }), 400);
     }
     const uid = users.ensureUid(req, res);
-    const existing = store.get('users', uid) ? entitlements.current(uid, v.service.id) : null;
     const requestToken = sign(config.secret, { k: 'authz', p: v.params }, 15 * 60);
+    if (v.service.hub) {
+      const known = store.get('users', uid);
+      const pendingId = parseCookies(req).ah_pending;
+      const pending = pendingId && services.get(pendingId) && !(known && entitlements.current(uid, pendingId)) ? services.get(pendingId) : null;
+      return html(
+        res,
+        hubConsentPage({ config, client: v.client, params: v.params, requestToken, csrf: users.csrf(uid, 'authz'), pending, autoTrials: known?.agentCanStartTrials !== false }),
+      );
+    }
+    const existing = store.get('users', uid) ? entitlements.current(uid, v.service.id) : null;
     return html(
       res,
       consentPage({ config, service: v.service, client: v.client, params: v.params, requestToken, csrf: users.csrf(uid, 'authz'), existing }),
@@ -246,11 +265,28 @@ function buildRoutes(ctx) {
     const params = body.p;
     const client = await oauth.resolveClient(params.client_id);
     if (!redirectMatches(client.redirect_uris, params.redirect_uri)) throw new HttpError(400, 'redirect_uri no longer matches the client');
-    const svc = service(oauth.serviceForResource(params.resource));
+    const svcId = oauth.serviceForResource(params.resource);
+    const svc = svcId ? oauth.serviceOrHub(svcId) : null;
+    if (!svc) throw new HttpError(404, 'That tool is not on this gateway any more.');
     if (form.decision !== 'allow') {
       return redirect(res, oauth.errorRedirect({ redirectUri: params.redirect_uri, state: params.state, error: 'access_denied', description: 'The person cancelled' }));
     }
-    users.getOrCreate(uid);
+    const person = users.getOrCreate(uid);
+    if (svc.hub) {
+      person.agentCanStartTrials = form.auto !== '0';
+      if (form.also && services.get(form.also)) {
+        try {
+          entitlements.connect(uid, form.also, { ip: clientIp(req) });
+        } catch (err) {
+          log.warn(`[hub] could not add ${form.also}: ${err.message}`);
+        }
+      }
+      store.save();
+      const grant = oauth.createGrant({ userId: uid, service: svc, client, entitlement: null });
+      log.info(`[hub] connected ${client.client_name || client.client_id} for ${uid}`);
+      appendHeader(res, 'set-cookie', 'ah_pending=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax');
+      return redirect(res, oauth.issueCode(params, grant));
+    }
     let entitlement;
     try {
       ({ entitlement } = entitlements.connect(uid, svc.id, { ip: clientIp(req) }));
@@ -269,16 +305,78 @@ function buildRoutes(ctx) {
   });
 
   // ---------- MCP ----------
+  route('*', '/mcp/?', (req, res) => hub.handle(req, res));
   route('*', '/mcp/(?<id>[a-z0-9-]+)/?', (req, res, { params }) => proxy.handle(req, res, params.id));
 
   // ---------- pages ----------
-  route('GET', '/', (req, res) => html(res, homePage({ config, services: [...services.values()], user: users.current(req) })));
+  const hubConnected = (uid) => Boolean(uid && store.findOne('grants', (g) => g.userId === uid && g.serviceId === HUB_ID && !g.revokedAt));
+  const myEntitlements = (uid) => new Map((uid ? entitlements.forUser(uid) : []).map((e) => [e.serviceId, e]));
+
+  route('GET', '/', (req, res) => {
+    const user = users.current(req);
+    return html(res, storefrontPage({ config, services: [...services.values()], user, connected: hubConnected(user?.id), mine: myEntitlements(user?.id) }));
+  });
+  route('GET', '/connect', (req, res) => {
+    const user = users.current(req);
+    const pending = services.get(parseCookies(req).ah_pending || '');
+    return html(res, connectPage({ config, user, connected: hubConnected(user?.id), pending }));
+  });
+  route('GET', '/agents', (req, res) => html(res, agentsPage({ config, services: [...services.values()] })));
+
+  // The "Add to my agent" button lands here. Connected people add with one click;
+  // everyone else connects once, and this tool comes along.
   route('GET', '/add/(?<id>[a-z0-9-]+)', (req, res, { params, query }) => {
     const s = service(params.id);
     if (query.format === 'json') return sendJson(res, 200, installInfo(config, s), CORS_HEADERS);
     const user = users.current(req);
+    if (hubConnected(user?.id)) return redirect(res, `/hub/add/${s.id}`);
     const existing = user ? entitlements.current(user.id, s.id) : null;
+    appendHeader(res, 'set-cookie', cookie('ah_pending', s.id, { maxAge: 1800, secure: config.publicUrl.startsWith('https://') }));
     return html(res, installPage({ config, service: s, user, existing: existing && existing.status !== 'dropped' ? existing : null }));
+  });
+
+  // Adding a tool to an agent that's already connected to the hub.
+  // Works from the browser session, or from a link the agent handed out (?t=).
+  const hubAddWho = (req, s, token) => {
+    if (token) {
+      const uid = users.readAddToken(token, s.id);
+      if (!uid || !store.get('users', uid)) throw new HttpError(400, 'This link expired. Ask your agent for a new one.');
+      return { uid, scoped: true };
+    }
+    const uid = users.uidFromRequest(req);
+    return { uid: hubConnected(uid) ? uid : null, scoped: false };
+  };
+  route('GET', '/hub/add/(?<id>[a-z0-9-]+)', (req, res, { params, query }) => {
+    const s = service(params.id);
+    const { uid, scoped } = hubAddWho(req, s, query.t);
+    if (!uid) return redirect(res, `/add/${s.id}`);
+    const existing = entitlements.current(uid, s.id);
+    return html(res, hubAddPage({ config, service: s, user: users.current(req), csrf: scoped ? '' : users.csrf(uid, 'hub'), token: scoped ? query.t : null, existing }));
+  });
+  route('POST', '/hub/add/(?<id>[a-z0-9-]+)', async (req, res, { params }) => {
+    const s = service(params.id);
+    const form = await readForm(req);
+    const { uid, scoped } = hubAddWho(req, s, form.t);
+    if (!uid) return redirect(res, `/add/${s.id}`, 303);
+    if (!scoped && !users.checkCsrf(uid, form.csrf, 'hub')) throw new HttpError(403, 'This form expired. Reload the page and try again.');
+    try {
+      entitlements.connect(uid, s.id, { ip: clientIp(req) });
+    } catch (err) {
+      const existing = entitlements.current(uid, s.id);
+      return html(res, hubAddPage({ config, service: s, user: users.current(req), csrf: scoped ? '' : users.csrf(uid, 'hub'), token: scoped ? form.t : null, existing, error: err.message }), 400);
+    }
+    log.info(`[hub] ${uid} added ${s.id} from the browser`);
+    return redirect(res, `/hub/added/${s.id}`, 303);
+  });
+  route('GET', '/hub/added/(?<id>[a-z0-9-]+)', (req, res, { params }) => html(res, hubAddedPage({ config, service: service(params.id), user: users.current(req) })));
+
+  route('POST', '/my/agent-settings', async (req, res) => {
+    const form = await readForm(req);
+    checkCsrf(req, form, 'my');
+    const user = requireUser(req);
+    user.agentCanStartTrials = form.auto === '1';
+    store.save();
+    return redirect(res, '/my?saved=agent', 303);
   });
 
   // Sign-in links never sign you in by just opening them: you confirm with a button,
@@ -286,7 +384,7 @@ function buildRoutes(ctx) {
   route('GET', '/my/login', (req, res, { query }) => {
     const uid = users.consumeLoginToken(query.t);
     if (!uid || !store.get('users', uid)) {
-      return html(res, errorPage(config, { title: 'This link expired', message: 'Ask your agent for a new one (it runs handshake_status).', status: 400 }), 400);
+      return html(res, errorPage(config, { title: 'This link expired', message: 'Ask your agent for a new one ("show my tools").', status: 400 }), 400);
     }
     const current = users.uidFromRequest(req);
     if (current === uid) return redirect(res, '/my');
@@ -312,9 +410,11 @@ function buildRoutes(ctx) {
     else if (query.removed) notice = { text: `Removed ${title(query.removed)}. Your agent can no longer use it. You can also delete it from your agent app's settings.` };
     else if (query.kept) notice = { text: `${title(query.kept)} is on the free plan now.` };
     else if (query.canceled) notice = { text: 'Checkout canceled. Nothing was charged.', tone: 'warn' };
+    else if (query.saved === 'agent') notice = { text: 'Saved. Your agent will follow this the next time it adds a tool.' };
     else if (query.saved) notice = { text: 'Spending limits saved.' };
     else if (query.payg) notice = { text: `Pay per call is on for ${title(query.payg)}.` };
-    return html(res, myPage({ config, user, entitlements: list, services, store, csrf: uid ? users.csrf(uid, 'my') : '', notice }));
+    const hubGrants = user ? store.find('grants', (g) => g.userId === user.id && g.serviceId === HUB_ID && !g.revokedAt) : [];
+    return html(res, myPage({ config, user, entitlements: list, services, store, csrf: uid ? users.csrf(uid, 'my') : '', notice, hubGrants }));
   });
 
   route('POST', '/my/(?<id>ent_[A-Za-z0-9_-]+)/remove', async (req, res, { params }) => {

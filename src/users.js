@@ -49,7 +49,10 @@ export class Users {
   }
 
   getOrCreate(uid) {
-    return this.store.get('users', uid) || this.store.put('users', uid, { id: uid, createdAt: Date.now(), spendPolicy: defaultSpendPolicy() });
+    return (
+      this.store.get('users', uid) ||
+      this.store.put('users', uid, { id: uid, createdAt: Date.now(), spendPolicy: defaultSpendPolicy(), agentCanStartTrials: true })
+    );
   }
 
   // Full sign-in to My tools. Only ever used behind a confirmation page.
@@ -71,6 +74,16 @@ export class Users {
   readEntitlementToken(token, entitlementId) {
     const body = verify(this.config.secret, token);
     return body?.k === 'ent' && body.e === entitlementId ? body.uid : null;
+  }
+
+  // A link the agent hands out so the person can approve adding one tool.
+  addToken(uid, serviceId, ttlSeconds = 24 * 3600) {
+    return sign(this.config.secret, { k: 'add', uid, s: serviceId }, ttlSeconds);
+  }
+
+  readAddToken(token, serviceId) {
+    const body = verify(this.config.secret, token);
+    return body?.k === 'add' && body.s === serviceId ? body.uid : null;
   }
 
   // ---- publisher admin session ----

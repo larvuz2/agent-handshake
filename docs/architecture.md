@@ -39,7 +39,10 @@
 | `src/users.js` | Browser accounts (signed cookie), sign-in links, CSRF |
 | `src/oauth/oauth.js` | Authorization server and resource-side token checks |
 | `src/oauth/cimd.js` | Client ID Metadata Document fetching with SSRF guards |
-| `src/mcp/proxy.js` | The MCP proxy |
+| `src/hub/hub.js` | The hub: agent tools, routing `tool__action` calls, list_changed |
+| `src/hub/upstream.js` | MCP client the hub uses to talk to each tool (session or stateless) |
+| `src/pages/hub.js` | Storefront, connect, one-click add, agent page |
+| `src/mcp/proxy.js` | The MCP proxy for direct, per-tool connections |
 | `src/mcp/messages.js` | Status tool and limit messages |
 | `src/mcp/sse.js` | Streaming SSE rewrite |
 | `src/billing/checkout.js` | Stripe, test and external checkout |

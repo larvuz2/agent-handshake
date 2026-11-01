@@ -47,7 +47,7 @@ function toolCard({ e, service, store, grants, csrf }) {
   </article>`;
 }
 
-export function myPage({ config, user, entitlements, services, store, csrf, notice }) {
+export function myPage({ config, user, entitlements, services, store, csrf, notice, hubGrants = [] }) {
   const active = entitlements.filter((e) => e.status !== 'dropped' && services.get(e.serviceId));
   const dropped = entitlements.filter((e) => e.status === 'dropped' && services.get(e.serviceId));
   const p = user?.spendPolicy || {};
@@ -55,6 +55,19 @@ export function myPage({ config, user, entitlements, services, store, csrf, noti
   const body = html`
   <div class="ah-row" style="margin-bottom:8px"><h1 style="margin:0">My tools</h1><span class="ah-spacer"></span><a class="ah-btn ah-btn--ghost ah-btn--sm" href="/">Find tools</a></div>
   <p class="ah-muted">Everything your agent can use through this gateway. Keep what works, remove what doesn't.</p>
+  ${user
+    ? html`<div class="ah-card ah-card--flat ah-row" style="margin:16px 0;gap:14px">
+        ${mark({ size: 34 })}
+        <div style="flex:1;min-width:220px">${hubGrants.length
+          ? html`<b>Your agent is connected</b><div class="ah-small ah-muted">In ${[...new Set(hubGrants.map((g) => g.clientInfo?.title || g.clientInfo?.name || g.clientName || g.clientHost))].join(', ')}. New tools show up there, no setup.</div>`
+          : html`<b>Connect your agent once</b><div class="ah-small ah-muted">Then every tool is one click away, and your agent can find tools on its own.</div>`}</div>
+        ${hubGrants.length
+          ? html`<form method="post" action="/my/agent-settings" class="ah-row" style="gap:10px">${csrfField(csrf)}
+              <label class="ah-check" style="margin:0"><input type="checkbox" name="auto" value="1" ${user.agentCanStartTrials !== false ? html`checked` : ''}><span>Let my agent start free trials</span></label>
+              <button class="ah-btn ah-btn--sm ah-btn--ghost">Save</button></form>`
+          : html`<a class="ah-btn ah-btn--sm" href="/connect">Connect</a>`}
+      </div>`
+    : ''}
   ${notice ? html`<div class="ah-note ah-note--${notice.tone || 'good'}" style="margin:16px 0">${notice.text}</div>` : ''}
   ${active.length === 0
     ? html`<div class="ah-card ah-card--soft ah-center" style="padding:40px 20px">${mark({ size: 48 })}<h3 style="margin-top:12px">No tools yet</h3><p class="ah-muted">Look for an <b>Add to my agent</b> button on a website, or browse the tools on this gateway.</p><a class="ah-btn" href="/#tools">Browse tools</a></div>`
@@ -81,6 +94,6 @@ export function myPage({ config, user, entitlements, services, store, csrf, noti
     </div>
     <div style="margin-top:14px"><button class="ah-btn ah-btn--sm">Save limits</button></div>
   </form>
-  <p class="ah-small ah-muted" style="margin-top:24px">This list is tied to this browser. To open it somewhere else, ask your agent to run <code>handshake_status</code>: it returns a sign-in link.</p>`;
+  <p class="ah-small ah-muted" style="margin-top:24px">This list is tied to this browser. To open it somewhere else, ask your agent for "my tools": it returns a sign-in link.</p>`;
   return layout({ config, title: 'My tools', body, user });
 }

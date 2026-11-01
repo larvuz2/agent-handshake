@@ -140,6 +140,128 @@ function notesApp() {
   };
 }
 
+// ---------- World Clock ----------
+
+const CITIES = {
+  'new york': 'America/New_York', 'los angeles': 'America/Los_Angeles', 'mexico city': 'America/Mexico_City', 'sao paulo': 'America/Sao_Paulo',
+  london: 'Europe/London', paris: 'Europe/Paris', madrid: 'Europe/Madrid', berlin: 'Europe/Berlin', lagos: 'Africa/Lagos', dubai: 'Asia/Dubai',
+  mumbai: 'Asia/Kolkata', singapore: 'Asia/Singapore', tokyo: 'Asia/Tokyo', sydney: 'Australia/Sydney', utc: 'UTC',
+};
+function zoneFor(place) {
+  const p = String(place || '').trim();
+  if (CITIES[p.toLowerCase()]) return CITIES[p.toLowerCase()];
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: p });
+    return p;
+  } catch {
+    return null;
+  }
+}
+const fmtIn = (zone, d = new Date()) => d.toLocaleString('en-US', { timeZone: zone, weekday: 'short', hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' });
+
+function clockApp() {
+  return {
+    info: { name: 'world-clock-demo', title: 'World Clock (demo)', version: '1.0.0' },
+    instructions: 'Current time in cities and time zones, and meeting times across zones.',
+    tools: [
+      {
+        name: 'time_in',
+        title: 'Time in a city',
+        description: 'Current local time in a city or IANA time zone (e.g. "Tokyo", "Europe/Paris").',
+        inputSchema: { type: 'object', properties: { place: { type: 'string' } }, required: ['place'] },
+        annotations: { readOnlyHint: true },
+      },
+      {
+        name: 'meeting_times',
+        title: 'Meeting time across cities',
+        description: 'Show one moment (ISO time, default now) in several cities.',
+        inputSchema: { type: 'object', properties: { places: { type: 'array', items: { type: 'string' } }, at: { type: 'string' } }, required: ['places'] },
+        annotations: { readOnlyHint: true },
+      },
+    ],
+    call(user, name, args = {}) {
+      if (name === 'time_in') {
+        const zone = zoneFor(args.place);
+        return zone ? text(`${args.place}: ${fmtIn(zone)} (${zone})`) : text(`I don't know "${args.place}". Try a big city or an IANA zone like Europe/Paris.`, true);
+      }
+      if (name === 'meeting_times') {
+        const at = args.at ? new Date(args.at) : new Date();
+        if (Number.isNaN(at.getTime())) return text('at must be an ISO date-time', true);
+        const rows = (args.places || []).map((p) => {
+          const z = zoneFor(p);
+          return z ? `- ${p}: ${fmtIn(z, at)}` : `- ${p}: unknown place`;
+        });
+        return text(rows.join('\n') || 'Give at least one place.');
+      }
+      return null;
+    },
+  };
+}
+
+// ---------- Text Tools ----------
+
+function textApp() {
+  return {
+    info: { name: 'text-tools-demo', title: 'Text Tools (demo)', version: '1.0.0' },
+    instructions: 'Count words, make URL slugs, and pull out emails and links from text.',
+    tools: [
+      { name: 'word_count', title: 'Word count', description: 'Count words, characters and reading time.', inputSchema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] }, annotations: { readOnlyHint: true } },
+      { name: 'slugify', title: 'Slugify', description: 'Turn a title into a URL slug.', inputSchema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] }, annotations: { readOnlyHint: true } },
+      { name: 'extract_links', title: 'Extract emails and links', description: 'Find every email address and URL in a text.', inputSchema: { type: 'object', properties: { text: { type: 'string' } }, required: ['text'] }, annotations: { readOnlyHint: true } },
+    ],
+    call(user, name, args = {}) {
+      const t = String(args.text || '');
+      if (name === 'word_count') {
+        const words = t.split(/\s+/).filter(Boolean).length;
+        return text(`${words} words, ${t.length} characters, about ${Math.max(1, Math.round(words / 230))} min to read.`);
+      }
+      if (name === 'slugify') return text(t.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || '(empty)');
+      if (name === 'extract_links') {
+        const emails = t.match(/[\w.+-]+@[\w-]+\.[\w.]+/g) || [];
+        const urls = t.match(/https?:\/\/[^\s)]+/g) || [];
+        return text(`Emails: ${emails.join(', ') || 'none'}\nLinks: ${urls.join(', ') || 'none'}`);
+      }
+      return null;
+    },
+  };
+}
+
+// ---------- Unit Converter ----------
+
+const UNITS = {
+  m: ['length', 1], km: ['length', 1000], cm: ['length', 0.01], mm: ['length', 0.001], mi: ['length', 1609.344], ft: ['length', 0.3048], in: ['length', 0.0254], yd: ['length', 0.9144],
+  kg: ['mass', 1], g: ['mass', 0.001], lb: ['mass', 0.45359237], oz: ['mass', 0.028349523125],
+  l: ['volume', 1], ml: ['volume', 0.001], gal: ['volume', 3.785411784], cup: ['volume', 0.2365882365],
+};
+function unitsApp() {
+  return {
+    info: { name: 'unit-converter-demo', title: 'Unit Converter (demo)', version: '1.0.0' },
+    instructions: 'Convert length, weight, volume and temperature.',
+    tools: [
+      {
+        name: 'convert',
+        title: 'Convert units',
+        description: 'Convert a value, e.g. 5 mi to km, 70 F to C, 2 lb to g.',
+        inputSchema: { type: 'object', properties: { value: { type: 'number' }, from: { type: 'string' }, to: { type: 'string' } }, required: ['value', 'from', 'to'] },
+        annotations: { readOnlyHint: true },
+      },
+    ],
+    call(user, name, args = {}) {
+      if (name !== 'convert') return null;
+      const v = Number(args.value);
+      const from = String(args.from || '').toLowerCase();
+      const to = String(args.to || '').toLowerCase();
+      const temp = { c: (x) => x, f: (x) => ((x - 32) * 5) / 9, k: (x) => x - 273.15 };
+      const fromC = { c: (x) => x, f: (x) => (x * 9) / 5 + 32, k: (x) => x + 273.15 };
+      let out;
+      if (temp[from] && fromC[to]) out = fromC[to](temp[from](v));
+      else if (UNITS[from] && UNITS[to] && UNITS[from][0] === UNITS[to][0]) out = (v * UNITS[from][1]) / UNITS[to][1];
+      else return text(`Can't convert ${from} to ${to}. Known: ${Object.keys(UNITS).join(', ')}, c, f, k.`, true);
+      return text(`${v} ${args.from} = ${Math.round(out * 10000) / 10000} ${args.to}`);
+    },
+  };
+}
+
 // ---------- MCP plumbing ----------
 
 function handleMessage(app, user, msg) {
@@ -189,15 +311,16 @@ function handleMessage(app, user, msg) {
  * @param {boolean} [opts.sse] answer POSTs as an SSE stream instead of JSON
  */
 export function createDemoUpstream({ secret, sse = false } = {}) {
-  const apps = { lumen: lumenApp(), notes: notesApp() };
+  const apps = { lumen: lumenApp(), notes: notesApp(), clock: clockApp(), text: textApp(), units: unitsApp() };
   const sessions = new Set();
 
   return createServer(async (req, res) => {
     const path = new URL(req.url, 'http://localhost').pathname;
-    const key = path === '/mcp' || path === '/lumen/mcp' ? 'lumen' : path === '/notes/mcp' ? 'notes' : null;
+    const m = /^\/(\w+)\/mcp$/.exec(path);
+    const key = path === '/mcp' ? 'lumen' : m && apps[m[1]] ? m[1] : null;
     if (!key) {
       res.writeHead(404, { 'content-type': 'text/plain' });
-      return res.end('Agent Handshake demo MCP servers: POST /lumen/mcp or /notes/mcp');
+      return res.end(`Agent Handshake demo MCP servers: POST ${Object.keys(apps).map((k) => `/${k}/mcp`).join(', ')}`);
     }
     if (secret && req.headers['x-upstream-secret'] !== secret) {
       res.writeHead(401, { 'content-type': 'application/json' });
@@ -264,6 +387,7 @@ export function demoConfig({ upstreamUrl = 'http://localhost:7411', secret } = {
         description: 'Turn a prompt into a short video: storyboards, previews and 4K renders.',
         version: '1.4.0',
         publisher: { name: 'Lumen Labs (demo)', domain: 'lumen.example' },
+        tags: ['video', 'creative', 'media'],
         upstream: { url: `${upstreamUrl}/lumen/mcp`, headers },
         scopes: {
           projects: { description: 'Create and read your video projects', tools: ['list_projects', 'create_project'] },
@@ -283,8 +407,45 @@ export function demoConfig({ upstreamUrl = 'http://localhost:7411', secret } = {
         description: 'Short notes your agent can save, list and search.',
         version: '0.9.0',
         publisher: { name: 'Quick Notes (demo)', domain: 'quicknotes.example' },
+        tags: ['notes', 'memory', 'productivity'],
         upstream: { url: `${upstreamUrl}/notes/mcp`, headers },
         plans: [{ id: 'free', title: 'Free', price: 0, limits: { calls: 200, period: 'day' } }],
+      },
+      {
+        id: 'world-clock',
+        name: 'dev.worldclock/mcp',
+        title: 'World Clock',
+        description: 'Local time anywhere, and meeting times across time zones.',
+        version: '1.0.0',
+        publisher: { name: 'World Clock (demo)', domain: 'worldclock.example' },
+        tags: ['time', 'timezone', 'meetings', 'calendar'],
+        upstream: { url: `${upstreamUrl}/clock/mcp`, headers },
+        plans: [{ id: 'free', title: 'Free', price: 0 }],
+      },
+      {
+        id: 'text-tools',
+        name: 'dev.texttools/mcp',
+        title: 'Text Tools',
+        description: 'Word counts, URL slugs, and emails and links pulled out of any text.',
+        version: '1.0.0',
+        publisher: { name: 'Text Tools (demo)', domain: 'texttools.example' },
+        tags: ['text', 'writing', 'seo'],
+        upstream: { url: `${upstreamUrl}/text/mcp`, headers },
+        plans: [
+          { id: 'trial', title: 'Free trial', price: 0, durationDays: 14, limits: { calls: 300 } },
+          { id: 'pro', title: 'Pro', price: { amount: 3, currency: 'USD', interval: 'month' } },
+        ],
+      },
+      {
+        id: 'unit-converter',
+        name: 'dev.units/mcp',
+        title: 'Unit Converter',
+        description: 'Convert length, weight, volume and temperature.',
+        version: '1.0.0',
+        publisher: { name: 'Unit Converter (demo)', domain: 'units.example' },
+        tags: ['math', 'units', 'convert', 'cooking'],
+        upstream: { url: `${upstreamUrl}/units/mcp`, headers },
+        plans: [{ id: 'free', title: 'Free', price: 0, limits: { calls: 100, period: 'day' } }],
       },
     ],
   };

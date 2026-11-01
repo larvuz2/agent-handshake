@@ -257,13 +257,11 @@ export class McpProxy {
 
   // ---------- forwarding ----------
 
-  upstreamHeaders(req, ctx, accept) {
-    const { service, entitlement: e, grant } = ctx;
-    const h = {
-      accept,
-      'user-agent': 'agent-handshake-gateway/0.1',
-      // Who is calling, so the publisher can serve per-person data. Only trust these
-      // if the upstream is reachable through the gateway alone (use a shared secret header).
+  // Who is calling, so the publisher can serve per-person data. Only trust these
+  // if the upstream is reachable through the gateway alone (use a shared secret header).
+  identityHeaders(ctx) {
+    const { entitlement: e, grant } = ctx;
+    return {
       'x-handshake-user': e.userId,
       'x-handshake-entitlement': e.id,
       'x-handshake-plan': e.planId,
@@ -271,6 +269,10 @@ export class McpProxy {
       // Percent-encoded: header values must be plain ASCII.
       'x-handshake-client': encodeURIComponent(String(grant.clientInfo?.name || grant.clientName || '').slice(0, 100)),
     };
+  }
+
+  upstreamHeaders(req, ctx, accept) {
+    const h = { accept, 'user-agent': 'agent-handshake-gateway/0.1', ...this.identityHeaders(ctx) };
     for (const [k, v] of Object.entries(req.headers)) if (k.startsWith('mcp-') || k === 'last-event-id') h[k] = v;
     return { ...h, ...ctx.service.upstream.headers };
   }

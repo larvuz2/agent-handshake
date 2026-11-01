@@ -1,4 +1,4 @@
-# Agent Handshake v1: analysis, decisions and plan
+# Agent Handshake: analysis, decisions and plan
 
 This is the working plan behind v0.1. It is based on the build report
 (Nov 1, 2026) and the product brief ("Add to my agent: three clicks, zero
@@ -69,3 +69,17 @@ x402). The missing 30% is the product:
 - x402 on mainnet with a production facilitator.
 - Native `dev.handshake/terms` support inside hosts (Hermes first).
 - Proposing the terms extension to the Server Card / AI Catalog groups.
+
+## 5. v0.2: from handshake to aggregator
+
+**What changed and why.** In v0.1 every tool was its own connector: a person repeated the install for each tool and had a separate trip through their agent app's settings each time. That still felt like "one more thing to paste". v0.2 makes Agent Handshake itself the one thing you connect.
+
+| Decision | Choice |
+|---|---|
+| Unit of connection | The **hub** (`/mcp`): one MCP connection per person per agent app |
+| How tools get added | By the **agent** (`handshake_search` → `handshake_add`) or by the **person** (one click in the catalog) |
+| Who decides on trials | The person, once: "Let my agent start free trials" (default on, $0 spend limit). Paid plans always need the person. |
+| How added tools show up | As `tool__action` in the same connection, plus `handshake_call` for apps that don't refresh their tool list right away |
+| The "Add to my agent" button | First time: connect the hub and bring that tool along. After that: one click. |
+| Positioning | "The open agent aggregator": an open protocol plus an open-source hub, with a flagship hosted hub |
+| Next | Federation between hubs, a public catalog repo, reputation from usage, private hubs for companies |

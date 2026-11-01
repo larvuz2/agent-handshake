@@ -47,7 +47,8 @@ export function verifiedPublisher(service, config) {
   if (publisherVerified(service, config)) {
     return html`<span class="ah-verified">${icon('shield', 15)} <b>${service.publisher.domain}</b> · verified, served from its own domain</span>`;
   }
-  return html`<span class="ah-verified">${service.publisher.name}${service.publisher.domain && service.publisher.name !== service.publisher.domain ? ` (${service.publisher.domain})` : ''} · served by ${host}</span>`;
+  const { name, domain } = service.publisher;
+  return html`<span class="ah-verified">${name}${domain && !name.includes(domain) ? ` · ${domain}` : ''} · served by ${host}</span>`;
 }
 
 export function behind(text) {

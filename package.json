@@ -1,7 +1,7 @@
 {
   "name": "agent-handshake",
-  "version": "0.1.0",
-  "description": "Add to my agent: three clicks, zero pasting. An open-source gateway that gives any MCP server one-click install, free trials, usage metering, keep/drop, and payments.",
+  "version": "0.2.0",
+  "description": "The open agent aggregator. Connect your AI agent once; it finds, tries and uses tools by itself, with free trials, spend limits, metering and payments for any MCP server.",
   "keywords": [
     "mcp",
     "model-context-protocol",
